@@ -1,0 +1,135 @@
+{
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "version": "2.0"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Light",
+      "rotation": [
+        0.1314070224761963,
+        0.8042834997177124,
+        -0.10147564858198166,
+        0.5705812573432922
+      ],
+      "translation": [
+        4.076245307922363,
+        798.9038696289062,
+        -1.0054539442062378
+      ]
+    },
+    {
+      "name": "Camera",
+      "rotation": [
+        0,
+        -0.7071068286895752,
+        0,
+        0.7071067094802856
+      ],
+      "translation": [
+        -13.90119743347168,
+        3199.89501953125,
+        -41.48363494873047
+      ]
+    },
+    {
+      "mesh": 0,
+      "name": "Plane.001",
+      "scale": [
+        1,
+        1,
+        1.7680000066757202
+      ]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Plane.001",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 96254,
+      "max": [
+        894.1067504882812,
+        170.1397247314453,
+        961.5611572265625
+      ],
+      "min": [
+        -906.0933227539062,
+        -178.72637939453125,
+        -1000
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 96254,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 96254,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5125,
+      "count": 110118,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 1155048,
+      "byteOffset": 0
+    },
+    {
+      "buffer": 0,
+      "byteLength": 1155048,
+      "byteOffset": 1155048
+    },
+    {
+      "buffer": 0,
+      "byteLength": 770032,
+      "byteOffset": 2310096
+    },
+    {
+      "buffer": 0,
+      "byteLength": 440472,
+      "byteOffset": 3080128
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "wiregibsolid_data.bin",
+      "byteLength": 3520600
+    }
+  ]
+}
