@@ -18,7 +18,7 @@
     "url": "https://github.com/room-27/gib-bus-tracker-3d/issues"
   },
   "homepage": "https://github.com/room-27/gib-bus-tracker-3d#readme",
-  "devDependencies": {
+  "dependencies": {
     "express": "^4.18.1",
     "three": "^0.142.0",
     "three-gltf-loader": "^1.111.0",
