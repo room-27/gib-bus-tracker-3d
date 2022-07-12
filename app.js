@@ -17,7 +17,7 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-  res.sendFile(join(__dirname, "public/index.html"));
+  res.render(join(__dirname, "public/index"));
 })
 
 app.listen(port);
