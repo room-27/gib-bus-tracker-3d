@@ -35,7 +35,7 @@ const cameraDirection = new THREE.Vector3(
 );
 
 camera.position.copy(cameraStart);
-camera.rotation.copy(cameraDirection);
+camera.rotation.setFromVector3(cameraDirection, camera.rotation.order);
 camera.updateMatrix();
 camera.updateProjectionMatrix();
 scene.add(camera);
@@ -70,10 +70,9 @@ meshLoader.load(
     // that I may not remember to remove (when updating mesh).
 
     let rockGeo = new THREE.WireframeGeometry(rock.children[0].geometry); // Copy geometry, render wireframe on top of original.
-    console.log(rock.children[0].geometry);
     rockWire = new THREE.LineSegments(rockGeo);
     rockWire.material.color.set(0xffffff);
-    rockWire.material.linewidth = 1;
+    rockWire.material.linewidth = 0.5;
 
     rockWire.updateMatrix();
 
@@ -83,7 +82,6 @@ meshLoader.load(
 
     scene.add(rockGroup);
 
-    console.log(rockGroup);
   },
   (xhr) => {
     console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`); // Progress indicator
@@ -108,8 +106,6 @@ renderer.setClearColor(0x000000, 0.0);
 const controls = new OrbitControls(camera, renderer.domElement);
 
 const cameraTarget = cameraStart.add(cameraDirection.multiplyScalar(100)); // Add direction vector to start to obtain a point in this direction to target
-console.log(cameraStart, cameraDirection);
-console.log(cameraTarget);
 controls.addEventListener("change", () => renderer.render(scene, camera));
 
 camera.updateProjectionMatrix();
@@ -118,6 +114,5 @@ camera.updateProjectionMatrix();
 const loop = () => {
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
-  console.log(camera)
 };
 loop();
