@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "main": "src/index.html",
   "scripts": {
-    "start": "node run ./app.js"
+    "start": "node ./app.js"
   },
   "repository": {
     "type": "git",
