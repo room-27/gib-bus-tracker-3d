@@ -1,7 +1,9 @@
 import express from "express";
-const app = express();
 import { fileURLToPath } from "url";
 import { join, dirname } from "path";
+
+const app = express();
+const port = process.env.PORT || 8080;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,4 +20,4 @@ app.get("/", (req, res) => {
   res.sendFile(join(__dirname, "public/index.html"));
 })
 
-app.listen(8080, () => console.log("http://127.0.0.1:8080"));
+app.listen(port);
