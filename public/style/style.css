@@ -1,0 +1,26 @@
+html {
+  width: 100%;
+  height: 100%;
+
+  background: #00c3ff; /* Backwards compatible */
+  background: -webkit-linear-gradient(
+    top,
+    #00c3ff,
+    #005fec
+  ); /* For Older Chrome, Safari */
+  background: -moz-linear-gradient(
+    top,
+    #00c3ff,
+    #005fec
+  ); /* For Older Firefox */
+  background: linear-gradient(
+    top,
+    #00c3ff,
+    #005fec
+  ); /* IE10+, FF16+, Chrome26+, Opera12+, Safari17+ */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}

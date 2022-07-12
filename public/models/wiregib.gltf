@@ -1,0 +1,90 @@
+{
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "version": "2.0"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "Plane.001"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Plane.001",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 96139,
+      "max": [894.1067504882812, 170.1397247314453, 1700.0401611328125],
+      "min": [-906.0933227539062, -178.72637939453125, -1768],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 96139,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 96139,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5125,
+      "count": 110118,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 1153668,
+      "byteOffset": 0
+    },
+    {
+      "buffer": 0,
+      "byteLength": 1153668,
+      "byteOffset": 1153668
+    },
+    {
+      "buffer": 0,
+      "byteLength": 769112,
+      "byteOffset": 2307336
+    },
+    {
+      "buffer": 0,
+      "byteLength": 440472,
+      "byteOffset": 3076448
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 3516920,
+      "uri": "wiregib.bin"
+    }
+  ]
+}
