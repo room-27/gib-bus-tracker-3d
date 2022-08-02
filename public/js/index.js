@@ -13,7 +13,7 @@ const routeColours = {
   2: 0xfaa11f,
   3: 0xed008c,
   4: 0x276bb4,
-  7: 0x6d6e72,
+  7: 0xc4c5c6, //0x6d6e72 too dark
   8: 0x000000,
   9: 0x009edf,
 };
