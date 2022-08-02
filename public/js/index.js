@@ -85,7 +85,7 @@ meshLoader.load(
 
     let rockGeo = new THREE.WireframeGeometry(rock.children[0].geometry); // Copy geometry, render wireframe on top of original.
     rockWire = new THREE.LineSegments(rockGeo);
-    rockWire.material.color.set(0xffffff);
+    rockWire.material.color.set(0x777777);
     rockWire.material.linewidth = 0.5;
 
     rockWire.updateMatrix();
@@ -130,29 +130,74 @@ camera.updateProjectionMatrix();
 // testing phase - only Routes 2 & 3
 var stopsRaw = Object.values(stopData)[0].routes;
 var stops = new THREE.Group();
+var curves = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
 function projectStops() {
-  for (var route of ["2", "3"]) {
+  for (var route of ["1", "2", "3"]) {
+    var routeStops = new THREE.Group();
+    var routeCurves = new THREE.Group();
     var stopsPos = [];
     var routeStopsRaw = stopsRaw[route];
     var routeColour = routeColours[route];
     for (var l in routeStopsRaw) {
+      if (l === undefined || l.length == 0) continue;
       let stopPos = lltp(routeStopsRaw[l][0], routeStopsRaw[l][1]);
+
+      // Find where the terrain height is at this stop, 'drop' it in place.
+      let intersect;
       downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
-      let intersect = downRay.intersectObjects(rockGroup.children)[0].point;
-      stopsPos.push(intersect);
+      if (downRay.intersectObjects(rockGroup.children).length > 0) {
+        intersect = downRay.intersectObjects(rockGroup.children)[0].point;
+        intersect.y += 4;
+        stopsPos.push(intersect);
+      } else continue;
     }
-    for (var p in stopsPos) {
+    for (var p = 0; p < stopsPos.length; p++) {
       var stopSphere = new THREE.Mesh(
         new THREE.SphereGeometry(10, 8, 6),
         new THREE.MeshBasicMaterial({ color: routeColour })
       );
       stopSphere.position.copy(stopsPos[p]);
-      stops.add(stopSphere);
+      routeStops.add(stopSphere);
+
+      // Create bezier curves between stops.
+      var curve = new THREE.CurvePath();
+      if (p == Object.keys(stopsPos).length - 1) {
+        // If last stop, join with first.
+        curve = bezierPath(stopsPos[p], stopsPos[0]);
+      } else {
+        curve = bezierPath(stopsPos[p], stopsPos[p + 1]);
+      }
+
+      var curveMaterial = new THREE.LineBasicMaterial({
+        color: routeColour,
+        linewidth: 10,
+      });
+      var curvePoints = curve.getPoints(10);
+      var curveGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
+      var curvedLine = new THREE.Line(curveGeometry, curveMaterial);
+      routeCurves.add(curvedLine);
     }
+    stops.add(routeStops);
+    curves.add(routeCurves);
   }
   scene.add(stops);
+  scene.add(curves);
+}
+
+function bezierPath(start, end) {
+  var distance = Math.hypot(start.x - end.x, start.z - end.z);
+  var height = Math.max(start.y, end.y) + distance / 8;
+  var midpoint = new THREE.Vector3(
+    (start.x + end.x) / 2,
+    height,
+    (start.z + end.z) / 2
+  );
+  var curve = new THREE.QuadraticBezierCurve3(start, midpoint, end);
+  var curvePath = new THREE.CurvePath();
+  curvePath.add(curve);
+  return curvePath;
 }
 
 // Coordinate Debug Info
