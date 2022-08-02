@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "OrbitControls";
 import { GLTFLoader } from "GLTFLoader";
+import { lltp } from "LLTP";
+import * as stopData from "../data/stops.json" assert {type: "json"};
 
 const dim = {};
 dim.width = window.innerWidth;
@@ -12,6 +14,8 @@ window.addEventListener("resize", () => {
 
   camera.aspect = dim.width / dim.height;
   camera.updateProjectionMatrix();
+
+  localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
 
   renderer.setSize(dim.width, dim.height);
 });
@@ -82,6 +86,8 @@ meshLoader.load(
 
     scene.add(rockGroup);
 
+    // Now the stops can be projected onto the terrain
+    projectStops();
   },
   (xhr) => {
     console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`); // Progress indicator
@@ -110,8 +116,59 @@ controls.addEventListener("change", () => renderer.render(scene, camera));
 
 camera.updateProjectionMatrix();
 
+// Bus Stop LLTP
+// testing phase - only Route 3
+
+var testStopsRaw = Object.values(stopData)[0].routes["3"];
+var testStopsPos = [];
+var testStops = new THREE.Group();
+var downRay = new THREE.Raycaster();
+
+function projectStops(){
+  for (var l in testStopsRaw) {
+    let testStopPos = lltp(testStopsRaw[l][0], testStopsRaw[l][1]);
+    downRay.set(testStopPos, new THREE.Vector3(0, -1, 0))
+    let intersect = downRay.intersectObjects(rockGroup.children)[0].point;
+    testStopsPos.push(intersect);
+  }
+  for (var p in testStopsPos) {
+    var TSSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(10, 8, 6),
+      new THREE.MeshBasicMaterial({ color: 0xed008c })
+    );
+    TSSphere.position.copy(testStopsPos[p]);
+    testStops.add(TSSphere);
+  }
+  scene.add(testStops);
+}
+
+// Coordinate Debug Info
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+
+// document.addEventListener(
+//   "click",
+//   (event) => {
+//     mouse.x = (event.clientX / dim.width) * 2 - 1;
+//     mouse.y = -(event.clientY / dim.height) * 2 + 1;
+//     // console.log(mouse)
+
+//     raycaster.setFromCamera(mouse, camera);
+//     var intersects = raycaster.intersectObjects(rockGroup.children);
+//     if (intersects.length > 0) console.log(intersects[0].point);
+//   },
+//   false
+// );
+
+var localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
+var axesHelper = new THREE.AxesHelper(0.2);
+// scene.add(axesHelper);
+
 // Main Loop
 const loop = () => {
+  var axesPlacement = camera.localToWorld(localToCameraAxesPlacement.clone());
+  axesHelper.position.copy(axesPlacement);
+
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 };
