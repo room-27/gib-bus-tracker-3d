@@ -127,14 +127,13 @@ controls.addEventListener("change", () => renderer.render(scene, camera));
 camera.updateProjectionMatrix();
 
 // Bus Stop LLTP
-// testing phase - only Routes 2 & 3
 var stopsRaw = Object.values(stopData)[0].routes;
 var stops = new THREE.Group();
 var curves = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
 function projectStops() {
-  for (var route of ["1", "2", "3"]) {
+  for (var route of ["1", "2", "3", "4", "7", "8", "9"]) {
     var routeStops = new THREE.Group();
     var routeCurves = new THREE.Group();
     var stopsPos = [];
