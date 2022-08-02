@@ -2,11 +2,21 @@ import * as THREE from "three";
 import { OrbitControls } from "OrbitControls";
 import { GLTFLoader } from "GLTFLoader";
 import { lltp } from "LLTP";
-import * as stopData from "../data/stops.json" assert {type: "json"};
+import * as stopData from "../data/stops.json" assert { type: "json" };
 
 const dim = {};
 dim.width = window.innerWidth;
 dim.height = window.innerHeight;
+
+const routeColours = {
+  1: 0x41ad48,
+  2: 0xfaa11f,
+  3: 0xed008c,
+  4: 0x276bb4,
+  7: 0x6d6e72,
+  8: 0x000000,
+  9: 0x009edf,
+};
 
 window.addEventListener("resize", () => {
   dim.width = window.innerWidth;
@@ -86,7 +96,7 @@ meshLoader.load(
 
     scene.add(rockGroup);
 
-    // Now the stops can be projected onto the terrain
+    // Now the stops can be projected onto the terrain, since the mesh is loaded.
     projectStops();
   },
   (xhr) => {
@@ -117,29 +127,32 @@ controls.addEventListener("change", () => renderer.render(scene, camera));
 camera.updateProjectionMatrix();
 
 // Bus Stop LLTP
-// testing phase - only Route 3
-
-var testStopsRaw = Object.values(stopData)[0].routes["3"];
-var testStopsPos = [];
-var testStops = new THREE.Group();
+// testing phase - only Routes 2 & 3
+var stopsRaw = Object.values(stopData)[0].routes;
+var stops = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
-function projectStops(){
-  for (var l in testStopsRaw) {
-    let testStopPos = lltp(testStopsRaw[l][0], testStopsRaw[l][1]);
-    downRay.set(testStopPos, new THREE.Vector3(0, -1, 0))
-    let intersect = downRay.intersectObjects(rockGroup.children)[0].point;
-    testStopsPos.push(intersect);
+function projectStops() {
+  for (var route of ["2", "3"]) {
+    var stopsPos = [];
+    var routeStopsRaw = stopsRaw[route];
+    var routeColour = routeColours[route];
+    for (var l in routeStopsRaw) {
+      let stopPos = lltp(routeStopsRaw[l][0], routeStopsRaw[l][1]);
+      downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
+      let intersect = downRay.intersectObjects(rockGroup.children)[0].point;
+      stopsPos.push(intersect);
+    }
+    for (var p in stopsPos) {
+      var stopSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(10, 8, 6),
+        new THREE.MeshBasicMaterial({ color: routeColour })
+      );
+      stopSphere.position.copy(stopsPos[p]);
+      stops.add(stopSphere);
+    }
   }
-  for (var p in testStopsPos) {
-    var TSSphere = new THREE.Mesh(
-      new THREE.SphereGeometry(10, 8, 6),
-      new THREE.MeshBasicMaterial({ color: 0xed008c })
-    );
-    TSSphere.position.copy(testStopsPos[p]);
-    testStops.add(TSSphere);
-  }
-  scene.add(testStops);
+  scene.add(stops);
 }
 
 // Coordinate Debug Info
