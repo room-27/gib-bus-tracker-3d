@@ -13,9 +13,10 @@ const routeColours = {
   2: 0xfaa11f,
   3: 0xed008c,
   4: 0x276bb4,
-  7: 0xc4c5c6, //0x6d6e72 too dark
+  7: 0x6d6e72, //0x6d6e72 too dark
   8: 0x000000,
   9: 0x009edf,
+  // N1: 0xa10800,
 };
 
 window.addEventListener("resize", () => {
@@ -63,36 +64,29 @@ scene.add(camera);
 
 // Load Mesh
 var rock, rockWire, rockGroup;
-const wireMaterial = new THREE.MeshBasicMaterial({
-  color: 0x333333,
+const wireMaterial = new THREE.MeshStandardMaterial({
+  color: 0xbebebe,
+  roughness: 0.7,
+  metalness: 0.35,
+  flatShading: false,
   polygonOffset: true,
   polygonOffsetFactor: 1,
   polygonOffsetUnits: 1,
-  // wireframe: true,
-  // wireframeLinewidth: 2
 });
 const meshLoader = new GLTFLoader();
 meshLoader.load(
   "../models/wiregib.gltf",
   (gltf) => {
+    // Although scene has only one element usually, it may have a Light, Camera etc.,
+    // that I may not remember to remove (when updating mesh).
     rock = gltf.scene;
     rock.traverse((node) => {
       if (!node.isMesh) return;
       node.material = wireMaterial;
     });
-    // Although scene has only one element usually, it may have a Light, Camera etc.,
-    // that I may not remember to remove (when updating mesh).
-
-    let rockGeo = new THREE.WireframeGeometry(rock.children[0].geometry); // Copy geometry, render wireframe on top of original.
-    rockWire = new THREE.LineSegments(rockGeo);
-    rockWire.material.color.set(0x777777);
-    rockWire.material.linewidth = 0.5;
-
-    rockWire.updateMatrix();
 
     rockGroup = new THREE.Group();
     rockGroup.add(rock.children[0]);
-    rockGroup.add(rockWire);
 
     scene.add(rockGroup);
 
@@ -144,12 +138,22 @@ function projectStops() {
       let stopPos = lltp(routeStopsRaw[l][0], routeStopsRaw[l][1]);
 
       // Find where the terrain height is at this stop, 'drop' it in place.
-      let intersect;
+      let intersect, intersectOther;
+      stops.updateMatrixWorld();
       downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
-      if (downRay.intersectObjects(rockGroup.children).length > 0) {
-        intersect = downRay.intersectObjects(rockGroup.children)[0].point;
-        intersect.y += 4;
-        stopsPos.push(intersect);
+      intersectOther = downRay.intersectObjects(stops.children, true);
+      intersect = downRay.intersectObjects(rockGroup.children, true);
+      console.log(route, intersectOther, stops);
+      if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
+        // Check for existing markers at this position, if so place on top of them.
+        let intersectPoint = intersectOther[0].point;
+        intersectPoint.y += 3;
+        stopsPos.push(intersectPoint);
+      } else if (typeof intersect !== "undefined" && intersect.length > 0) {
+        // If not, place on ground.
+        let intersectPoint = intersect[0].point;
+        intersectPoint.y += 4;
+        stopsPos.push(intersectPoint);
       } else continue;
     }
     for (var p = 0; p < stopsPos.length; p++) {
@@ -171,7 +175,7 @@ function projectStops() {
 
       var curveMaterial = new THREE.LineBasicMaterial({
         color: routeColour,
-        linewidth: 10,
+        linewidth: 1,
       });
       var curvePoints = curve.getPoints(10);
       var curveGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
@@ -199,23 +203,48 @@ function bezierPath(start, end) {
   return curvePath;
 }
 
+// Lighting
+var ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
+var dirLight = new THREE.DirectionalLight(0x9999ff, 0.5);
+var dirLight2 = new THREE.DirectionalLight(0xff9999, 0.5);
+var dirLightTarget = new THREE.Object3D();
+var dirLightTarget2 = new THREE.Object3D();
+var pointLight = new THREE.PointLight(0xffffff, 0.3, 0, 0.3);
+
+dirLight.position.set(250, 120, 1640);
+dirLight.castShadow = true;
+dirLightTarget.position.set(100, 120, -910);
+dirLight.target = dirLightTarget;
+
+dirLight2.position.set(20, 120, -1670);
+dirLight2.castShadow = true;
+dirLightTarget2.position.set(450, 120, 500);
+dirLight2.target = dirLightTarget2;
+
+pointLight.position.set(-550, 400, 100);
+
+scene.add(ambientLight, dirLight, dirLightTarget, dirLight2, dirLightTarget2, pointLight);
+
 // Coordinate Debug Info
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 
-// document.addEventListener(
-//   "click",
-//   (event) => {
-//     mouse.x = (event.clientX / dim.width) * 2 - 1;
-//     mouse.y = -(event.clientY / dim.height) * 2 + 1;
-//     // console.log(mouse)
+document.addEventListener(
+  "click",
+  (event) => {
+    mouse.x = (event.clientX / dim.width) * 2 - 1;
+    mouse.y = -(event.clientY / dim.height) * 2 + 1;
+    // console.log(mouse)
 
-//     raycaster.setFromCamera(mouse, camera);
-//     var intersects = raycaster.intersectObjects(rockGroup.children);
-//     if (intersects.length > 0) console.log(intersects[0].point);
-//   },
-//   false
-// );
+    raycaster.setFromCamera(mouse, camera);
+    var intersects = raycaster.intersectObjects(rockGroup.children);
+    if (intersects.length > 0) {
+      console.log(intersects[0].point);
+      // dirLightTarget.position.copy(intersects[0].point);
+    }
+  },
+  false
+);
 
 var localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
 var axesHelper = new THREE.AxesHelper(0.2);
