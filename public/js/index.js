@@ -3,6 +3,7 @@ import { OrbitControls } from "OrbitControls";
 import { GLTFLoader } from "GLTFLoader";
 import { lltp } from "LLTP";
 import * as stopData from "../data/stops.json" assert { type: "json" };
+import * as routePathData from "../data/routePathData.json" assert { type: "json" };
 
 const dim = {};
 dim.width = window.innerWidth;
@@ -17,6 +18,10 @@ const routeColours = {
   8: 0x000000,
   9: 0x009edf,
   // N1: 0xa10800,
+};
+
+const uniforms = {
+  time: { value: 0 },
 };
 
 window.addEventListener("resize", () => {
@@ -92,6 +97,8 @@ meshLoader.load(
 
     // Now the stops can be projected onto the terrain, since the mesh is loaded.
     projectStops();
+
+    // routePath();
   },
   (xhr) => {
     console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`); // Progress indicator
@@ -143,22 +150,22 @@ function projectStops() {
       downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
       intersectOther = downRay.intersectObjects(stops.children, true);
       intersect = downRay.intersectObjects(rockGroup.children, true);
-      console.log(route, intersectOther, stops);
+
       if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
         // Check for existing markers at this position, if so place on top of them.
         let intersectPoint = intersectOther[0].point;
-        intersectPoint.y += 3;
+        intersectPoint.y += 2;
         stopsPos.push(intersectPoint);
       } else if (typeof intersect !== "undefined" && intersect.length > 0) {
         // If not, place on ground.
         let intersectPoint = intersect[0].point;
-        intersectPoint.y += 4;
+        intersectPoint.y += 3;
         stopsPos.push(intersectPoint);
       } else continue;
     }
     for (var p = 0; p < stopsPos.length; p++) {
       var stopSphere = new THREE.Mesh(
-        new THREE.SphereGeometry(10, 8, 6),
+        new THREE.SphereGeometry(8, 8, 6),
         new THREE.MeshBasicMaterial({ color: routeColour })
       );
       stopSphere.position.copy(stopsPos[p]);
@@ -173,14 +180,25 @@ function projectStops() {
         curve = bezierPath(stopsPos[p], stopsPos[p + 1]);
       }
 
-      var curveMaterial = new THREE.LineBasicMaterial({
+      var curveMaterial = new THREE.LineDashedMaterial({
         color: routeColour,
         linewidth: 1,
+        scale: 1,
+        dashSize: 8,
+        gapSize: 8,
+        onBeforeCompile: (shader) => {
+          shader.uniforms.time = uniforms.time;
+          shader.fragmentShader = `
+            uniform float time;
+            ${shader.fragmentShader}
+          `.replace("vLineDistance,", "vLineDistance - ( 10.0 * time ),");
+        },
       });
       var curvePoints = curve.getPoints(10);
       var curveGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
       var curvedLine = new THREE.Line(curveGeometry, curveMaterial);
       routeCurves.add(curvedLine);
+      curvedLine.computeLineDistances();
     }
     stops.add(routeStops);
     curves.add(routeCurves);
@@ -203,6 +221,41 @@ function bezierPath(start, end) {
   return curvePath;
 }
 
+function routePath() {
+  // Read data from ../data/routeData.json, join coordinates and create a path for each route.
+  var routePaths = new THREE.Group();
+  var routePathsRaw = Object.values(routePathData)[0].features;
+
+  for (var i = 0; i < routePathsRaw.length; i++) {
+    var routePath = routePathsRaw[i];
+    console.log(routePath);
+    var routePathGeoData = routePath.geometry.coordinates;
+    var routeColour = parseInt(routePath.properties.colour, 16);
+    var routePathGeometry = new THREE.BufferGeometry();
+    var points = [];
+    console.log(routeColour);
+
+    // for each pair of coordinates, create a line
+    for (const pairGroup of routePathGeoData) {
+      for (const pair of pairGroup) {
+        let point = lltp(pair[1], pair[0]);
+        points.push(point);
+      }
+    }
+
+    routePathGeometry.setFromPoints(points);
+    var routePathMaterial = new THREE.LineBasicMaterial({
+      color: new THREE.Color(routeColour),
+      linewidth: 1,
+    });
+
+    var routePathMesh = new THREE.Line(routePathGeometry, routePathMaterial);
+    routePaths.add(routePathMesh);
+  }
+
+  scene.add(routePaths);
+}
+
 // Lighting
 var ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
 var dirLight = new THREE.DirectionalLight(0x9999ff, 0.5);
@@ -223,35 +276,48 @@ dirLight2.target = dirLightTarget2;
 
 pointLight.position.set(-550, 400, 100);
 
-scene.add(ambientLight, dirLight, dirLightTarget, dirLight2, dirLightTarget2, pointLight);
+scene.add(
+  ambientLight,
+  dirLight,
+  dirLightTarget,
+  dirLight2,
+  dirLightTarget2,
+  pointLight
+);
 
 // Coordinate Debug Info
-var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2();
+// var raycaster = new THREE.Raycaster();
+// var mouse = new THREE.Vector2();
 
-document.addEventListener(
-  "click",
-  (event) => {
-    mouse.x = (event.clientX / dim.width) * 2 - 1;
-    mouse.y = -(event.clientY / dim.height) * 2 + 1;
-    // console.log(mouse)
+// document.addEventListener(
+//   "click",
+//   (event) => {
+//     mouse.x = (event.clientX / dim.width) * 2 - 1;
+//     mouse.y = -(event.clientY / dim.height) * 2 + 1;
+//     // console.log(mouse)
 
-    raycaster.setFromCamera(mouse, camera);
-    var intersects = raycaster.intersectObjects(rockGroup.children);
-    if (intersects.length > 0) {
-      console.log(intersects[0].point);
-      // dirLightTarget.position.copy(intersects[0].point);
-    }
-  },
-  false
-);
+//     raycaster.setFromCamera(mouse, camera);
+//     var intersects = raycaster.intersectObjects(rockGroup.children);
+//     if (intersects.length > 0) {
+//       console.log(intersects[0].point);
+//       // dirLightTarget.position.copy(intersects[0].point);
+//     }
+//   },
+//   false
+// );
 
 var localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
 var axesHelper = new THREE.AxesHelper(0.2);
 // scene.add(axesHelper);
 
+// Clock for some animation
+var clock = new THREE.Clock();
+
 // Main Loop
 const loop = () => {
+  // Tick
+  uniforms.time.value = clock.getElapsedTime();
+
   var axesPlacement = camera.localToWorld(localToCameraAxesPlacement.clone());
   axesHelper.position.copy(axesPlacement);
 
