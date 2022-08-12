@@ -23,10 +23,9 @@
     "express": "^4.18.1",
     "three": "^0.142.0",
     "three-gltf-loader": "^1.111.0",
-    "three-orbitcontrols": "^2.110.3"
-  },
-  "devDependencies": {
+    "three-orbitcontrols": "^2.110.3",
     "cors": "^2.8.5",
     "cors-anywhere": "^0.4.4"
-  }
+  },
+  "devDependencies": {}
 }
