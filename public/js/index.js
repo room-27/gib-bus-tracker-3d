@@ -5,6 +5,10 @@ import { lltp } from "LLTP";
 import * as stopData from "../data/stops.json" assert { type: "json" };
 import * as routePathData from "../data/routePathData.json" assert { type: "json" };
 
+const host = process.env.HOST || "0.0.0.0";
+const port = process.env.PORT || 8080;
+const proxyPort = (parseInt(process.env.PORT) + 1).toString() || 8081;
+
 const dim = {};
 dim.width = window.innerWidth;
 dim.height = window.innerHeight;
@@ -26,7 +30,7 @@ const uniforms = {
   time: { value: 0 },
 };
 
-const proxyURL = "http://localhost:8081/";
+const proxyURL = "http://" + host + ":" + proxyPort + "/";
 
 var lastStops = {
   1: [],
