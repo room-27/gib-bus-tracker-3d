@@ -9,6 +9,8 @@ const dim = {};
 dim.width = window.innerWidth;
 dim.height = window.innerHeight;
 
+const busIDs = ["1", "2", "3", "4", "7", "8", "9"];
+
 const routeColours = {
   1: 0x41ad48,
   2: 0xfaa11f,
@@ -22,6 +24,18 @@ const routeColours = {
 
 const uniforms = {
   time: { value: 0 },
+};
+
+const proxyURL = "http://localhost:8081/";
+
+var lastStops = {
+  1: [],
+  2: [],
+  3: [],
+  4: [],
+  7: [],
+  8: [],
+  9: [],
 };
 
 window.addEventListener("resize", () => {
@@ -134,7 +148,7 @@ var curves = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
 function projectStops() {
-  for (var route of ["1", "2", "3", "4", "7", "8", "9"]) {
+  for (var route of busIDs) {
     var routeStops = new THREE.Group();
     var routeCurves = new THREE.Group();
     var stopsPos = [];
@@ -169,6 +183,7 @@ function projectStops() {
         new THREE.MeshBasicMaterial({ color: routeColour })
       );
       stopSphere.position.copy(stopsPos[p]);
+      stopSphere.name = "stop";
       routeStops.add(stopSphere);
 
       // Create bezier curves between stops.
@@ -191,7 +206,7 @@ function projectStops() {
           shader.fragmentShader = `
             uniform float time;
             ${shader.fragmentShader}
-          `.replace("vLineDistance,", "vLineDistance - ( 10.0 * time ),");
+          `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
         },
       });
       var curvePoints = curve.getPoints(10);
@@ -200,9 +215,11 @@ function projectStops() {
       routeCurves.add(curvedLine);
       curvedLine.computeLineDistances();
     }
+    routeStops.name = "r" + route + "_stops";
     stops.add(routeStops);
     curves.add(routeCurves);
   }
+  stops.name = "stops";
   scene.add(stops);
   scene.add(curves);
 }
@@ -221,19 +238,147 @@ function bezierPath(start, end) {
   return curvePath;
 }
 
+function fetchBusData() {
+  var baseUrl = proxyURL + "https://track.bus.gi/busTracker.php?id=";
+  var busStopIDs = {};
+  var fetches = [];
+  for (var i of busIDs) {
+    const ii = i; // Seems to 'forget' which index we are on if not stored
+    var url = baseUrl + ii;
+    fetches.push(
+      fetch(url, { "Content-Type": "text/plain" })
+        .then((response) => {
+          return response.text();
+        })
+        .then((html) => {
+          var parser = new DOMParser();
+          var document = parser.parseFromString(html, "text/html");
+          var stopRegex = /R\d\/c(\d{1,2}a?)\.png/;
+          var imageIDs = [];
+          var images = Array.prototype.slice.call(
+            document.getElementsByTagName("img")
+          );
+          images.forEach((image) => {
+            let src = image.src;
+            if (src.includes("background")) {
+              return; // Skip background image for each route
+            } else {
+              let match = stopRegex.exec(src);
+              if (match) {
+                imageIDs.push(match[1]);
+              }
+            }
+          });
+          busStopIDs[ii] = imageIDs;
+        })
+    );
+  }
+
+  // Wait for all fetches to complete before continuing
+  Promise.all(fetches).then(() => {
+    getBuses(stopIDToCoords(busStopIDs));
+  });
+
+  setTimeout(fetchBusData, 10000);
+}
+
+function stopIDToCoords(busStopIDs) {
+  var busStopCoords = {
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    7: [],
+    8: [],
+    9: [],
+  };
+  for (var i of busIDs) {
+    var routeStopIDs = busStopIDs[i];
+    var routeStopCoords = [];
+    for (var j = 0; j < routeStopIDs.length; j++) {
+      var stopID = routeStopIDs[j];
+      var between = false;
+      console.log(i, j, stopID);
+      if (stopID.endsWith("a")) {
+        between = true;
+        stopID = stopID.slice(0, -1);
+      }
+      var stopCoords = Object.values(stopData)[0].routes[i][stopID - 1];
+      routeStopCoords.push(stopCoords); // TODO: get correct stop, get midpoint if between
+    }
+    busStopCoords[i] = routeStopCoords;
+  }
+  return busStopCoords;
+}
+
+function getBuses(busData) {
+  // (TESTING) Get buses from dict if any changes.
+
+  // Clear last 'frame'
+  scene.remove(scene.getObjectByName("lastBuses"));
+
+  var allBuses = new THREE.Group();
+  for (var i of busIDs) {
+    var buses = new THREE.Group();
+    var busesPos = [];
+    var routeBusData = busData[i];
+    for (var b = 0; b < routeBusData.length; b++) {
+      if (routeBusData[b] === undefined || routeBusData[b].length == 0)
+        continue;
+      let busPos = lltp(routeBusData[b][0], routeBusData[b][1]);
+
+      // Need to know if other objects in the way
+      allBuses.updateMatrixWorld();
+      downRay.set(busPos, new THREE.Vector3(0, -1, 0));
+
+      let intersectOther = downRay.intersectObjects(allBuses.children, true);
+      let intersect = downRay.intersectObjects(scene.children, true);
+
+      if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
+        // Check for existing buses at this position MAYBE
+        let intersectPoint = intersectOther[0].point;
+        intersectPoint.y += 0;
+        busesPos.push(intersectPoint);
+      } else if (typeof intersect !== "undefined" && intersect.length > 0) {
+        // If not, place above stops
+        let intersectPoint = intersect[0].point;
+        intersectPoint.y += 60;
+        busesPos.push(intersectPoint);
+      } else continue;
+    }
+    for (var p = 0; p < busesPos.length; p++) {
+      var aBus = bus(i);
+      aBus.position.copy(busesPos[p]);
+      aBus.name = "bus";
+      buses.add(aBus);
+    }
+    buses.name = "r" + i + "_buses";
+    allBuses.add(buses);
+  }
+  allBuses.name = "lastBuses";
+  scene.add(allBuses);
+}
+
+function bus(route) {
+  // Create a bus.
+  var busGeometry = new THREE.ConeGeometry(10, 44, 4);
+  var busMaterial = new THREE.MeshBasicMaterial({ color: routeColours[route] });
+  var bus = new THREE.Mesh(busGeometry, busMaterial);
+  bus.rotation.x = Math.PI;
+  return bus;
+}
+
 function routePath() {
-  // Read data from ../data/routeData.json, join coordinates and create a path for each route.
+  // (TESTING) Read data from file, join coordinates and create a detailled road path for each route.
   var routePaths = new THREE.Group();
   var routePathsRaw = Object.values(routePathData)[0].features;
 
   for (var i = 0; i < routePathsRaw.length; i++) {
     var routePath = routePathsRaw[i];
-    console.log(routePath);
     var routePathGeoData = routePath.geometry.coordinates;
     var routeColour = parseInt(routePath.properties.colour, 16);
     var routePathGeometry = new THREE.BufferGeometry();
     var points = [];
-    console.log(routeColour);
 
     // for each pair of coordinates, create a line
     for (const pairGroup of routePathGeoData) {
@@ -312,6 +457,9 @@ var axesHelper = new THREE.AxesHelper(0.2);
 
 // Clock for some animation
 var clock = new THREE.Clock();
+
+// Start fetching bus data from server
+fetchBusData();
 
 // Main Loop
 const loop = () => {
