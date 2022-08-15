@@ -30,9 +30,7 @@ const corsOptions = {
   allowedHeaders: ["Content-Type"],
 };
 
-cors_proxy.createServer(corsOptions).listen(proxyPort, host, () => {
-  console.log("Running CORS Anywhere on port " + proxyPort);
-});
+let proxy = cors_proxy.createServer(corsOptions);
 
 app.use(cors());
 
@@ -42,9 +40,15 @@ app.use(
   "/jsm/",
   express.static(join(__dirname, "node_modules/three/examples/jsm"))
 );
+app.use(express.static(join(__dirname, "app.js")));
 
 app.get("/", (req, res) => {
   res.render(join(__dirname, "public/index"));
 });
+
+app.get("/proxy/:url*", (req, res) => {
+  req.url = req.url.replace("/proxy/", "/");
+  proxy.emit("request", req, res);
+})
 
 app.listen(port);

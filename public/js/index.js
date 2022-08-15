@@ -5,10 +5,6 @@ import { lltp } from "LLTP";
 import * as stopData from "../data/stops.json" assert { type: "json" };
 import * as routePathData from "../data/routePathData.json" assert { type: "json" };
 
-const host = process.env.HOST || "0.0.0.0";
-const port = process.env.PORT || 8080;
-const proxyPort = (parseInt(process.env.PORT) + 1).toString() || 8081;
-
 const dim = {};
 dim.width = window.innerWidth;
 dim.height = window.innerHeight;
@@ -30,7 +26,7 @@ const uniforms = {
   time: { value: 0 },
 };
 
-const proxyURL = "http://" + host + ":" + proxyPort + "/";
+const proxyURL = "/proxy/";
 
 var lastStops = {
   1: [],
@@ -302,7 +298,7 @@ function stopIDToCoords(busStopIDs) {
     for (var j = 0; j < routeStopIDs.length; j++) {
       var stopID = routeStopIDs[j];
       var between = false;
-      console.log(i, j, stopID);
+
       if (stopID.endsWith("a")) {
         between = true;
         stopID = stopID.slice(0, -1);
