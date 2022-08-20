@@ -28,7 +28,7 @@ const uniforms = {
 
 const proxyURL = "/proxy/";
 
-var lastStops = {
+var lastStopIDs = {
   1: [],
   2: [],
   3: [],
@@ -226,7 +226,7 @@ function projectStops() {
 
 function bezierPath(start, end) {
   var distance = Math.hypot(start.x - end.x, start.z - end.z);
-  var height = Math.max(start.y, end.y) + distance / 8;
+  var height = Math.max(start.y, end.y) + 10 + distance / 8;
   var midpoint = new THREE.Vector3(
     (start.x + end.x) / 2,
     height,
@@ -276,7 +276,13 @@ function fetchBusData() {
 
   // Wait for all fetches to complete before continuing
   Promise.all(fetches).then(() => {
-    getBuses(stopIDToCoords(busStopIDs));
+    // check if dict is same as previous dict:
+    if (JSON.stringify(busStopIDs) == JSON.stringify(lastStopIDs)) {
+      return;
+    } else {
+      lastStopIDs = busStopIDs;
+      getBuses(stopIDToCoords(busStopIDs));
+    }
   });
 
   setTimeout(fetchBusData, 10000);
