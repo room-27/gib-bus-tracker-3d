@@ -7,10 +7,6 @@ import cors_proxy from "cors-anywhere";
 const app = express();
 const host = process.env.HOST || "0.0.0.0";
 const port = process.env.PORT || 8080;
-const proxyPort = process.env.PORT
-  ? (parseInt(process.env.PORT) + 1).toString()
-  : 8081;
-console.log(host, port, proxyPort);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
