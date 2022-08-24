@@ -24,6 +24,19 @@ h1 {
   color: #ffffff;
 }
 
+div#logo-box {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  padding: 1%;
+}
+
+object#logo, img#logo {
+  position: relative;
+  width: calc(min(max(10vw, 64px), 150px));
+  height: calc(min(max(10vw, 64px), 150px));
+}
+
 .yellect::selection {
   background-color: #bbcc00
 }
