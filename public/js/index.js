@@ -12,14 +12,13 @@ dim.height = window.innerHeight;
 const busIDs = ["1", "2", "3", "4", "7", "8", "9"];
 
 const routeColours = {
-  1: 0x41ad48,
+  1: 0x12a321,
   2: 0xfaa11f,
   3: 0xed008c,
   4: 0x276bb4,
-  7: 0x6d6e72, //0x6d6e72 too dark
+  7: 0x6d6e72,
   8: 0x000000,
   9: 0x009edf,
-  // N1: 0xa10800,
 };
 
 const uniforms = {
