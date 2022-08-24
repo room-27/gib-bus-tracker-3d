@@ -38,13 +38,18 @@ app.use(
 );
 app.use(express.static(join(__dirname, "app.js")));
 
-app.get("/", (req, res) => {
+app.get("/", (req, res, next) => {
   res.render(join(__dirname, "public/index"));
 });
 
-app.get("/proxy/:url*", (req, res) => {
+app.get("/proxy/https://track.bus.gi/:p", (req, res, next) => {
   req.url = req.url.replace("/proxy/", "/");
   proxy.emit("request", req, res);
-})
+});
+
+app.get("*", (req, res, next) => {
+  res.status(404);
+  res.sendFile(join(__dirname, "public/404.html"));
+});
 
 app.listen(port);
