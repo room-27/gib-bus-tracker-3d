@@ -147,6 +147,36 @@ var curves = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
 function projectStops() {
+  const dashedCurveMaterial = (lineCol) => {
+    return new THREE.LineDashedMaterial({
+      color: lineCol,
+      linewidth: 1,
+      scale: 1,
+      dashSize: 8,
+      gapSize: 8,
+      onBeforeCompile: (shader) => {
+        shader.uniforms.time = uniforms.time;
+        shader.fragmentShader = `
+              uniform float time;
+              ${shader.fragmentShader}
+            `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
+      },
+    })
+  };
+  const activeCurveMaterial = (lineCol) => {
+    return new THREE.LineBasicMaterial({
+      color: lineCol,
+      linewidth: 1,
+      transparent: true,
+      onBeforeCompile: (shader) => {
+        shader.uniforms.time = uniforms.time;
+        shader.fragmentShader = `
+        uniform float time;
+        ${shader.fragmentShader}
+        `.replace("diffuse, opacity", "diffuse, abs(sin(3.5 * time))");
+      },
+    });
+  };
   for (var route of busIDs) {
     var routeStops = new THREE.Group();
     var routeCurves = new THREE.Group();
@@ -187,27 +217,17 @@ function projectStops() {
 
       // Create bezier curves between stops.
       var curve = new THREE.CurvePath();
-      if (p == Object.keys(stopsPos).length - 1) {
+      let routeLength = Object.keys(stopsPos).length;
+      if (p == routeLength - 1) {
         // If last stop, join with first.
         curve = bezierPath(stopsPos[p], stopsPos[0]);
       } else {
         curve = bezierPath(stopsPos[p], stopsPos[p + 1]);
       }
 
-      var curveMaterial = new THREE.LineDashedMaterial({
-        color: routeColour,
-        linewidth: 1,
-        scale: 1,
-        dashSize: 8,
-        gapSize: 8,
-        onBeforeCompile: (shader) => {
-          shader.uniforms.time = uniforms.time;
-          shader.fragmentShader = `
-            uniform float time;
-            ${shader.fragmentShader}
-          `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
-        },
-      });
+      // TODO: get stop data to see if bus is between stops, change material accordingly
+      var curveMaterial = dashedCurveMaterial(routeColour);
+
       var curvePoints = curve.getPoints(10);
       var curveGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
       var curvedLine = new THREE.Line(curveGeometry, curveMaterial);
@@ -289,13 +309,34 @@ function fetchBusData() {
 
 function stopIDToCoords(busStopIDs) {
   var busStopCoords = {
-    1: [],
-    2: [],
-    3: [],
-    4: [],
-    7: [],
-    8: [],
-    9: [],
+    1: {
+      coords: [],
+      data: "",
+    },
+    2: {
+      coords: [],
+      data: "",
+    },
+    3: {
+      coords: [],
+      data: "",
+    },
+    4: {
+      coords: [],
+      data: "",
+    },
+    7: {
+      coords: [],
+      data: "",
+    },
+    8: {
+      coords: [],
+      data: "",
+    },
+    9: {
+      coords: [],
+      data: "",
+    },
   };
   for (var i of busIDs) {
     var routeStopIDs = busStopIDs[i];
@@ -308,16 +349,34 @@ function stopIDToCoords(busStopIDs) {
         between = true;
         stopID = stopID.slice(0, -1);
       }
-      var stopCoords = Object.values(stopData)[0].routes[i][stopID - 1];
-      routeStopCoords.push(stopCoords); // TODO: get correct stop, get midpoint if between
+
+      const routeStopsData = Object.values(stopData)[0].routes[i];
+
+      if (between) {
+        // Get two pairs of coordinates, find midpoint
+        let a, b;
+        a = routeStopsData[stopID - 1];
+        if (stopID == routeStopsData.length) {
+          // stopID is 1-indexed, if bus passed last stop, 'next' stop would be the first stop
+          b = routeStopsData[0];
+        } else {
+          b = routeStopsData[stopID];
+        }
+        // Arithmetic mean is approximately correct for negligible curvature
+        var stopCoords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+      } else {
+        var stopCoords = routeStopsData[stopID - 1];
+      }
+      routeStopCoords.push(stopCoords);
+      // TODO: get midpoint if between two stops, return data with relevant stops, and next two?
     }
-    busStopCoords[i] = routeStopCoords;
+    busStopCoords[i].coords = routeStopCoords;
   }
   return busStopCoords;
 }
 
 function getBuses(busData) {
-  // (TESTING) Get buses from dict if any changes.
+  // Get buses from dict if any changes.
 
   // Clear last 'frame'
   scene.remove(scene.getObjectByName("lastBuses"));
@@ -326,7 +385,7 @@ function getBuses(busData) {
   for (var i of busIDs) {
     var buses = new THREE.Group();
     var busesPos = [];
-    var routeBusData = busData[i];
+    var routeBusData = busData[i].coords;
     for (var b = 0; b < routeBusData.length; b++) {
       if (routeBusData[b] === undefined || routeBusData[b].length == 0)
         continue;

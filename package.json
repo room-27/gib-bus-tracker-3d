@@ -22,9 +22,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "cors-anywhere": "^0.4.4",
-    "express": "^4.18.1",
+    "express": "^4.18.2",
     "http-proxy": "^1.18.1",
-    "three": "^0.142.0",
+    "three": "^0.147.0",
     "three-gltf-loader": "^1.111.0",
     "three-orbitcontrols": "^2.110.3"
   }
