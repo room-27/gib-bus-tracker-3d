@@ -157,7 +157,7 @@ function projectStops() {
     var stopsPos = [];
     var routeStopsRaw = stopsRaw[route];
     var routeColour = routeColours[route];
-    
+
     stops.updateMatrixWorld();
     for (var l in routeStopsRaw) {
       if (l === undefined || l.length == 0) continue;
@@ -168,7 +168,7 @@ function projectStops() {
       downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
       intersectOther = downRay.intersectObjects(stops.children, true);
       intersect = downRay.intersectObjects(rockGroup.children, true);
-      
+
       if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
         // Check for existing markers at this position, if so place on top of them.
         let intersectPoint = intersectOther[0].point;
@@ -190,8 +190,7 @@ function projectStops() {
       stopSphere.name = "stop_" + route + "_" + p;
       routeStops.add(stopSphere);
     }
-    allStops[route] = stopsPos,
-    routeStops.name = "r" + route + "_stops";
+    (allStops[route] = stopsPos), (routeStops.name = "r" + route + "_stops");
     stops.add(routeStops);
   }
   stops.name = "stops";
@@ -235,13 +234,13 @@ function drawLinks(stopsPos, busData) {
     var routeBusData = busData[route];
     var routeColour = routeColours[route];
     var routeCurves = new THREE.Group();
-    
+
     // Change material to 'slower' dashes if no buses on route
     var curveMaterial =
       routeBusData.data.length == 0
         ? noBusCurveMaterial(routeColour)
         : dashedCurveMaterial(routeColour);
-    
+
     for (var p = 0; p < routeStops.length; p++) {
       // Create bezier curves between stops.
       var curve = new THREE.CurvePath();
@@ -252,7 +251,6 @@ function drawLinks(stopsPos, busData) {
       } else {
         curve = bezierPath(routeStops[p], routeStops[p + 1]);
       }
-
 
       var curvePoints = curve.getPoints(10);
       var curveGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
@@ -267,7 +265,7 @@ function drawLinks(stopsPos, busData) {
   allCurves.name = "lastLinks";
   scene.add(allCurves);
 }
-  
+
 function bezierPath(start, end) {
   var distance = Math.hypot(start.x - end.x, start.z - end.z);
   var height = Math.max(start.y, end.y) + 10 + distance / 8;
@@ -364,18 +362,17 @@ function stopIDToCoords(busStopIDs) {
           b = routeStopsData[stopID];
         }
         // Arithmetic mean is approximately correct for negligible curvature
-        var stopCoords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+        var stopCoords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       } else {
         var stopCoords = routeStopsData[stopID - 1];
       }
       routeStopCoords.push(stopCoords);
-      routeLinkData.push(between); // True if bus is between stops
-
+      routeLinkData.push([stopID, between]); // True if bus is between stops
     }
     busData[route] = {
       coords: routeStopCoords,
       data: routeLinkData,
-    }
+    };
   }
   return busData;
 }
@@ -392,6 +389,7 @@ function getBuses(busData) {
     var buses = new THREE.Group();
     var busesPos = [];
     var routeBusCoords = busData[route].coords;
+    var routeBusData = busData[route].data;
 
     for (var b = 0; b < routeBusCoords.length; b++) {
       if (routeBusCoords[b] === undefined || routeBusCoords[b].length == 0)
@@ -420,6 +418,26 @@ function getBuses(busData) {
     for (var p = 0; p < busesPos.length; p++) {
       var aBus = createBus(route);
       aBus.position.copy(busesPos[p]);
+
+      // Get direction from here to the next stop
+
+      // Collect stop index of each bus on route, from something like [index, true|false]
+      const stopIndex = routeBusData.map((_) => {
+        return _[0];
+      });
+      var dir = 0;
+      if (p == stopIndex.length) {
+        // If on last stop on route
+        let p0 = stopPositions[route][parseInt(stopIndex[p]) - 1];
+        let p1 = stopPositions[route][0];
+        dir = Math.atan2(p1.z - p0.z, p1.x - p0.x);
+      } else {
+        let p0 = stopPositions[route][parseInt(stopIndex[p]) - 1];
+        let p1 = stopPositions[route][parseInt(stopIndex[p])];
+        dir = Math.atan2(p1.z - p0.z, p1.x - p0.x);
+      }
+      // Set rotation about y-axis, account for original dir not aligning with 'pointing' dir
+      aBus.rotation.y = Math.PI - dir;
       aBus.name = "bus";
       buses.add(aBus);
     }
@@ -435,7 +453,7 @@ function createBus(route) {
   var busGeometry = new THREE.ConeGeometry(10, 44, 4);
   var busMaterial = new THREE.MeshBasicMaterial({ color: routeColours[route] });
   var bus = new THREE.Mesh(busGeometry, busMaterial);
-  bus.rotation.x = Math.PI;
+  bus.rotation.z = Math.PI / 2;
   return bus;
 }
 
@@ -501,7 +519,7 @@ scene.add(
   pointLight
 );
 
-// Coordinate Debug Info
+///Coordinate Debug Info
 // var raycaster = new THREE.Raycaster();
 // var mouse = new THREE.Vector2();
 
