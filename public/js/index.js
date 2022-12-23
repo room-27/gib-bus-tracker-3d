@@ -147,7 +147,6 @@ camera.updateProjectionMatrix();
 // Bus Stop LLTP
 var stopsRaw = Object.values(stopData)[0].routes;
 var stops = new THREE.Group();
-var curves = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
 function projectStops() {
@@ -226,10 +225,14 @@ function drawLinks(stopsPos, busData) {
       gapSize: 12,
     });
   };
+
+  // Clear last frame (else they keep stacking up)
+  scene.remove(scene.getObjectByName("lastLinks"));
+  var allCurves = new THREE.Group();
+
   for (const route of busIDs) {
     var routeStops = stopsPos[route];
     var routeBusData = busData[route];
-    var routeIsRunning = true;
     var routeColour = routeColours[route];
     var routeCurves = new THREE.Group();
     
@@ -259,10 +262,10 @@ function drawLinks(stopsPos, busData) {
       routeCurves.add(curvedLine);
     }
     routeCurves.name = "r" + route + "_links";
-    curves.add(routeCurves);
+    allCurves.add(routeCurves);
   }
-  curves.name = "links";
-  scene.add(curves);
+  allCurves.name = "lastLinks";
+  scene.add(allCurves);
 }
   
 function bezierPath(start, end) {
@@ -317,7 +320,7 @@ function fetchBusData() {
 
   // Wait for all fetches to complete before continuing
   Promise.all(fetches).then(() => {
-    // check if dict is same as previous dict:
+    // Check if dict is same as previous dict, if so then we're done:
     if (JSON.stringify(busStopIDs) == JSON.stringify(lastStopIDs)) {
       return;
     } else {
@@ -415,7 +418,7 @@ function getBuses(busData) {
       } else continue;
     }
     for (var p = 0; p < busesPos.length; p++) {
-      var aBus = bus(route);
+      var aBus = createBus(route);
       aBus.position.copy(busesPos[p]);
       aBus.name = "bus";
       buses.add(aBus);
@@ -427,7 +430,7 @@ function getBuses(busData) {
   scene.add(allBuses);
 }
 
-function bus(route) {
+function createBus(route) {
   // Create a bus.
   var busGeometry = new THREE.ConeGeometry(10, 44, 4);
   var busMaterial = new THREE.MeshBasicMaterial({ color: routeColours[route] });
