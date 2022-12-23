@@ -27,6 +27,7 @@ const uniforms = {
 
 const proxyURL = "/proxy/";
 
+// Globally store last fetched stops
 var lastStopIDs = {
   1: [],
   2: [],
@@ -80,6 +81,9 @@ scene.add(camera);
 // );
 // scene.add(cube);
 
+// Globally store stop positions once loaded
+var stopPositions = {};
+
 // Load Mesh
 var rock, rockWire, rockGroup;
 const wireMaterial = new THREE.MeshStandardMaterial({
@@ -109,7 +113,7 @@ meshLoader.load(
     scene.add(rockGroup);
 
     // Now the stops can be projected onto the terrain, since the mesh is loaded.
-    projectStops();
+    stopPositions = projectStops();
 
     // routePath();
   },
@@ -147,53 +151,25 @@ var curves = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
 function projectStops() {
-  const dashedCurveMaterial = (lineCol) => {
-    return new THREE.LineDashedMaterial({
-      color: lineCol,
-      linewidth: 1,
-      scale: 1,
-      dashSize: 8,
-      gapSize: 8,
-      onBeforeCompile: (shader) => {
-        shader.uniforms.time = uniforms.time;
-        shader.fragmentShader = `
-              uniform float time;
-              ${shader.fragmentShader}
-            `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
-      },
-    })
-  };
-  const activeCurveMaterial = (lineCol) => {
-    return new THREE.LineBasicMaterial({
-      color: lineCol,
-      linewidth: 1,
-      transparent: true,
-      onBeforeCompile: (shader) => {
-        shader.uniforms.time = uniforms.time;
-        shader.fragmentShader = `
-        uniform float time;
-        ${shader.fragmentShader}
-        `.replace("diffuse, opacity", "diffuse, abs(sin(3.5 * time))");
-      },
-    });
-  };
-  for (var route of busIDs) {
+  var allStops = {};
+
+  for (const route of busIDs) {
     var routeStops = new THREE.Group();
-    var routeCurves = new THREE.Group();
     var stopsPos = [];
     var routeStopsRaw = stopsRaw[route];
     var routeColour = routeColours[route];
+    
+    stops.updateMatrixWorld();
     for (var l in routeStopsRaw) {
       if (l === undefined || l.length == 0) continue;
       let stopPos = lltp(routeStopsRaw[l][0], routeStopsRaw[l][1]);
 
       // Find where the terrain height is at this stop, 'drop' it in place.
       let intersect, intersectOther;
-      stops.updateMatrixWorld();
       downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
       intersectOther = downRay.intersectObjects(stops.children, true);
       intersect = downRay.intersectObjects(rockGroup.children, true);
-
+      
       if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
         // Check for existing markers at this position, if so place on top of them.
         let intersectPoint = intersectOther[0].point;
@@ -212,37 +188,83 @@ function projectStops() {
         new THREE.MeshBasicMaterial({ color: routeColour })
       );
       stopSphere.position.copy(stopsPos[p]);
-      stopSphere.name = "stop";
+      stopSphere.name = "stop_" + route + "_" + p;
       routeStops.add(stopSphere);
+    }
+    allStops[route] = stopsPos,
+    routeStops.name = "r" + route + "_stops";
+    stops.add(routeStops);
+  }
+  stops.name = "stops";
+  scene.add(stops);
+  return allStops;
+}
 
+function drawLinks(stopsPos, busData) {
+  const dashedCurveMaterial = (lineCol) => {
+    return new THREE.LineDashedMaterial({
+      color: lineCol,
+      linewidth: 1,
+      scale: 1,
+      dashSize: 8,
+      gapSize: 8,
+      onBeforeCompile: (shader) => {
+        shader.uniforms.time = uniforms.time;
+        shader.fragmentShader = `
+              uniform float time;
+              ${shader.fragmentShader}
+            `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
+      },
+    });
+  };
+  const noBusCurveMaterial = (lineCol) => {
+    return new THREE.LineDashedMaterial({
+      color: lineCol,
+      linewidth: 1,
+      scale: 1,
+      dashSize: 4,
+      gapSize: 12,
+    });
+  };
+  for (const route of busIDs) {
+    var routeStops = stopsPos[route];
+    var routeBusData = busData[route];
+    var routeIsRunning = true;
+    var routeColour = routeColours[route];
+    var routeCurves = new THREE.Group();
+    
+    // Change material to 'slower' dashes if no buses on route
+    var curveMaterial =
+      routeBusData.data.length == 0
+        ? noBusCurveMaterial(routeColour)
+        : dashedCurveMaterial(routeColour);
+    
+    for (var p = 0; p < routeStops.length; p++) {
       // Create bezier curves between stops.
       var curve = new THREE.CurvePath();
-      let routeLength = Object.keys(stopsPos).length;
+      let routeLength = routeStops.length;
       if (p == routeLength - 1) {
         // If last stop, join with first.
-        curve = bezierPath(stopsPos[p], stopsPos[0]);
+        curve = bezierPath(routeStops[p], routeStops[0]);
       } else {
-        curve = bezierPath(stopsPos[p], stopsPos[p + 1]);
+        curve = bezierPath(routeStops[p], routeStops[p + 1]);
       }
 
-      // TODO: get stop data to see if bus is between stops, change material accordingly
-      var curveMaterial = dashedCurveMaterial(routeColour);
 
       var curvePoints = curve.getPoints(10);
       var curveGeometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
       var curvedLine = new THREE.Line(curveGeometry, curveMaterial);
-      routeCurves.add(curvedLine);
+      curvedLine.name = "link_" + route + "_" + p;
       curvedLine.computeLineDistances();
+      routeCurves.add(curvedLine);
     }
-    routeStops.name = "r" + route + "_stops";
-    stops.add(routeStops);
+    routeCurves.name = "r" + route + "_links";
     curves.add(routeCurves);
   }
-  stops.name = "stops";
-  scene.add(stops);
+  curves.name = "links";
   scene.add(curves);
 }
-
+  
 function bezierPath(start, end) {
   var distance = Math.hypot(start.x - end.x, start.z - end.z);
   var height = Math.max(start.y, end.y) + 10 + distance / 8;
@@ -300,7 +322,9 @@ function fetchBusData() {
       return;
     } else {
       lastStopIDs = busStopIDs;
-      getBuses(stopIDToCoords(busStopIDs));
+      var busData = stopIDToCoords(busStopIDs);
+      getBuses(busData);
+      drawLinks(stopPositions, busData);
     }
   });
 
@@ -308,39 +332,13 @@ function fetchBusData() {
 }
 
 function stopIDToCoords(busStopIDs) {
-  var busStopCoords = {
-    1: {
-      coords: [],
-      data: "",
-    },
-    2: {
-      coords: [],
-      data: "",
-    },
-    3: {
-      coords: [],
-      data: "",
-    },
-    4: {
-      coords: [],
-      data: "",
-    },
-    7: {
-      coords: [],
-      data: "",
-    },
-    8: {
-      coords: [],
-      data: "",
-    },
-    9: {
-      coords: [],
-      data: "",
-    },
-  };
-  for (var i of busIDs) {
-    var routeStopIDs = busStopIDs[i];
+  var busData = {};
+
+  for (var route of busIDs) {
+    var routeStopIDs = busStopIDs[route];
     var routeStopCoords = [];
+    var routeLinkData = [];
+
     for (var j = 0; j < routeStopIDs.length; j++) {
       var stopID = routeStopIDs[j];
       var between = false;
@@ -350,7 +348,7 @@ function stopIDToCoords(busStopIDs) {
         stopID = stopID.slice(0, -1);
       }
 
-      const routeStopsData = Object.values(stopData)[0].routes[i];
+      const routeStopsData = Object.values(stopData)[0].routes[route];
 
       if (between) {
         // Get two pairs of coordinates, find midpoint
@@ -368,11 +366,15 @@ function stopIDToCoords(busStopIDs) {
         var stopCoords = routeStopsData[stopID - 1];
       }
       routeStopCoords.push(stopCoords);
-      // TODO: get midpoint if between two stops, return data with relevant stops, and next two?
+      routeLinkData.push(between); // True if bus is between stops
+
     }
-    busStopCoords[i].coords = routeStopCoords;
+    busData[route] = {
+      coords: routeStopCoords,
+      data: routeLinkData,
+    }
   }
-  return busStopCoords;
+  return busData;
 }
 
 function getBuses(busData) {
@@ -382,14 +384,16 @@ function getBuses(busData) {
   scene.remove(scene.getObjectByName("lastBuses"));
 
   var allBuses = new THREE.Group();
-  for (var i of busIDs) {
+
+  for (var route of busIDs) {
     var buses = new THREE.Group();
     var busesPos = [];
-    var routeBusData = busData[i].coords;
-    for (var b = 0; b < routeBusData.length; b++) {
-      if (routeBusData[b] === undefined || routeBusData[b].length == 0)
+    var routeBusCoords = busData[route].coords;
+
+    for (var b = 0; b < routeBusCoords.length; b++) {
+      if (routeBusCoords[b] === undefined || routeBusCoords[b].length == 0)
         continue;
-      let busPos = lltp(routeBusData[b][0], routeBusData[b][1]);
+      let busPos = lltp(routeBusCoords[b][0], routeBusCoords[b][1]);
 
       // Need to know if other objects in the way
       allBuses.updateMatrixWorld();
@@ -411,12 +415,12 @@ function getBuses(busData) {
       } else continue;
     }
     for (var p = 0; p < busesPos.length; p++) {
-      var aBus = bus(i);
+      var aBus = bus(route);
       aBus.position.copy(busesPos[p]);
       aBus.name = "bus";
       buses.add(aBus);
     }
-    buses.name = "r" + i + "_buses";
+    buses.name = "r" + route + "_buses";
     allBuses.add(buses);
   }
   allBuses.name = "lastBuses";
