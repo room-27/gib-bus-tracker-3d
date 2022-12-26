@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "OrbitControls";
 import { GLTFLoader } from "GLTFLoader";
+import { ConvexGeometry } from "ConvexGeometry";
 import { lltp } from "LLTP";
 import * as stopData from "../data/stops.json" assert { type: "json" };
 import * as routePathData from "../data/routePathData.json" assert { type: "json" };
@@ -82,7 +83,7 @@ scene.add(camera);
 // scene.add(cube);
 
 // Globally store stop positions once loaded
-var stopPositions = {};
+var stopPositions = { 1: {}, 2: {}, 3: {}, 4: {}, 7: {}, 8: {}, 9: {} };
 
 // Load Mesh
 var rock, rockWire, rockGroup;
@@ -324,8 +325,8 @@ function fetchBusData() {
     } else {
       lastStopIDs = busStopIDs;
       var busData = stopIDToCoords(busStopIDs);
-      getBuses(busData);
       drawLinks(stopPositions, busData);
+      getBuses(busData);
     }
   });
 
@@ -406,12 +407,12 @@ function getBuses(busData) {
       if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
         // Check for existing buses at this position MAYBE
         let intersectPoint = intersectOther[0].point;
-        intersectPoint.y += 0;
+        intersectPoint.y += 6;
         busesPos.push(intersectPoint);
       } else if (typeof intersect !== "undefined" && intersect.length > 0) {
         // If not, place above stops
         let intersectPoint = intersect[0].point;
-        intersectPoint.y += 60;
+        intersectPoint.y += 45;
         busesPos.push(intersectPoint);
       } else continue;
     }
@@ -425,15 +426,16 @@ function getBuses(busData) {
       const stopIndex = routeBusData.map((_) => {
         return _[0];
       });
+      const routeStopPositions = stopPositions[route];
       var dir = 0;
-      if (p == stopIndex.length) {
+      if (stopIndex[p] == routeStopPositions.length) {
         // If on last stop on route
-        let p0 = stopPositions[route][parseInt(stopIndex[p]) - 1];
-        let p1 = stopPositions[route][0];
+        let p0 = routeStopPositions[parseInt(stopIndex[p]) - 1];
+        let p1 = routeStopPositions[0];
         dir = Math.atan2(p1.z - p0.z, p1.x - p0.x);
       } else {
-        let p0 = stopPositions[route][parseInt(stopIndex[p]) - 1];
-        let p1 = stopPositions[route][parseInt(stopIndex[p])];
+        let p0 = routeStopPositions[parseInt(stopIndex[p]) - 1];
+        let p1 = routeStopPositions[parseInt(stopIndex[p])];
         dir = Math.atan2(p1.z - p0.z, p1.x - p0.x);
       }
       // Set rotation about y-axis, account for original dir not aligning with 'pointing' dir
@@ -449,16 +451,39 @@ function getBuses(busData) {
 }
 
 function createBus(route) {
-  // Create a bus.
-  var busGeometry = new THREE.ConeGeometry(10, 44, 4);
-  var busMaterial = new THREE.MeshBasicMaterial({ color: routeColours[route] });
-  var bus = new THREE.Mesh(busGeometry, busMaterial);
-  bus.rotation.z = Math.PI / 2;
+  // Create a bus and point light
+
+  const busPoints = [
+    new THREE.Vector3(-6, -6, -6),
+    new THREE.Vector3(-14, 0, 0),
+    new THREE.Vector3(-6, -6, 6),
+    new THREE.Vector3(-6, 6, -6),
+    new THREE.Vector3(-6, 6, 6),
+    new THREE.Vector3(6, -6, -6),
+    new THREE.Vector3(6, -6, 6),
+    new THREE.Vector3(6, 6, -6),
+    new THREE.Vector3(6, 6, 6),
+  ];
+  var busGeometry = new ConvexGeometry(busPoints);
+  var busMaterial = new THREE.MeshPhongMaterial({
+    color: routeColours[route],
+    transparent: true,
+    opacity: 0.9,
+    emissive: routeColours[route],
+    emissiveIntensity: 0.25,
+    specular: 0x555555,
+    shininess: 40,
+  });
+  const bus = new THREE.Group();
+  var busMesh = new THREE.Mesh(busGeometry, busMaterial);
+  var busGlow = new THREE.PointLight(routeColours[route], 1.0, 120);
+  busGlow.position.set(0, 0, 0);
+  bus.add(busMesh, busGlow);
   return bus;
 }
 
 function routePath() {
-  // (TESTING) Read data from file, join coordinates and create a detailled road path for each route.
+  // (TESTING) Read data from file, join coordinates and create a detailed road path for each route.
   var routePaths = new THREE.Group();
   var routePathsRaw = Object.values(routePathData)[0].features;
 
