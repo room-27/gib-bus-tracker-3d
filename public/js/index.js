@@ -28,6 +28,9 @@ const uniforms = {
 
 const proxyURL = "/proxy/";
 
+// Settings
+var BUS_GLOW = false;
+
 // Globally store last fetched stops
 var lastStopIDs = {
   1: [],
@@ -129,9 +132,12 @@ meshLoader.load(
 // Renderer
 let canvas = document.getElementsByClassName("webgl")[0];
 
+const possibly_mobile = dim.height / dim.width > 1.0
+
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
-  antialias: true,
+  // Disable antialiasing if device is portrait
+  antialias: !possibly_mobile,
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(dim.width, dim.height);
@@ -470,13 +476,19 @@ function createBus(route) {
     transparent: true,
     opacity: 0.9,
     emissive: routeColours[route],
-    emissiveIntensity: 0.25,
-    specular: 0x555555,
+    emissiveIntensity: 0.2,
+    specular: 0x333333,
     shininess: 40,
   });
   const bus = new THREE.Group();
   var busMesh = new THREE.Mesh(busGeometry, busMaterial);
   var busGlow = new THREE.PointLight(routeColours[route], 1.0, 120);
+  
+  // Depending on setting, this will disable/enable bus lights
+  // busGlow.visible = BUS_GLOW;
+  if (!BUS_GLOW) busGlow.intensity = 0.0;
+
+  busGlow.name = "busglow";
   busGlow.position.set(0, 0, 0);
   bus.add(busMesh, busGlow);
   return bus;
@@ -574,6 +586,31 @@ var clock = new THREE.Clock();
 
 // Start fetching bus data from server
 fetchBusData();
+
+// GUI
+function create_toggle_button(id, text, parent, fn) {
+  const btn = document.createElement("button");
+  btn.id = id;
+  btn.innerHTML = text;
+  btn.addEventListener("click", () => {
+    fn();
+    btn.classList.toggle("btn-on");
+  });
+  document.getElementById(parent).appendChild(btn);
+}
+
+function toggle_busglow() {
+  // Invert last value *before* updating
+  BUS_GLOW = !BUS_GLOW;
+
+  scene.traverse((child) => {
+    if (child.name == "busglow") {
+      child.intensity = BUS_GLOW ? 1.0 : 0.0;
+    }
+  })
+}
+
+create_toggle_button("toggle_lights", "Toggle Bus Lights", "settings", toggle_busglow)
 
 // Main Loop
 const loop = () => {
