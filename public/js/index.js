@@ -5,6 +5,7 @@ import { ConvexGeometry } from "ConvexGeometry";
 import { lltp } from "LLTP";
 import * as stopData from "../data/stops.json" assert { type: "json" };
 import * as routePathData from "../data/routePathData.json" assert { type: "json" };
+import { MeshPhongMaterial } from "three";
 
 const dim = {};
 dim.width = window.innerWidth;
@@ -20,6 +21,16 @@ const routeColours = {
   7: 0x6d6e72,
   "8S": 0x000000,
   9: 0x009edf,
+};
+
+const busColours = {
+  1: 0x129325,
+  2: 0xfa9105,
+  3: 0xed0083,
+  4: 0x1c4b7d,
+  7: 0x4a4a4b,
+  "8S": 0x111111,
+  9: 0x008ebf,
 };
 
 const uniforms = {
@@ -206,32 +217,6 @@ function projectStops() {
 }
 
 function drawLinks(stopsPos, busData) {
-  const dashedCurveMaterial = (lineCol) => {
-    return new THREE.LineDashedMaterial({
-      color: lineCol,
-      linewidth: 1,
-      scale: 1,
-      dashSize: 8,
-      gapSize: 8,
-      onBeforeCompile: (shader) => {
-        shader.uniforms.time = uniforms.time;
-        shader.fragmentShader = `
-              uniform float time;
-              ${shader.fragmentShader}
-            `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
-      },
-    });
-  };
-  const noBusCurveMaterial = (lineCol) => {
-    return new THREE.LineDashedMaterial({
-      color: lineCol,
-      linewidth: 1,
-      scale: 1,
-      dashSize: 4,
-      gapSize: 12,
-    });
-  };
-
   // Clear last frame (else they keep stacking up)
   scene.remove(scene.getObjectByName("lastLinks"));
   var allCurves = new THREE.Group();
@@ -471,15 +456,14 @@ function createBus(route) {
     new THREE.Vector3(6, 6, 6),
   ];
   var busGeometry = new ConvexGeometry(busPoints);
-  var busMaterial = new THREE.MeshPhongMaterial({
-    color: routeColours[route],
-    transparent: true,
-    opacity: 0.9,
-    emissive: routeColours[route],
-    emissiveIntensity: 0.2,
-    specular: 0x333333,
-    shininess: 40,
-  });
+
+  var busMaterial = new MeshPhongMaterial({})
+  if (!possibly_mobile) {
+    busMaterial = busMaterialFancy.clone();
+    busMaterial.emissive = new THREE.Color(routeColours[route]);
+  }
+  busMaterial.color = new THREE.Color(busColours[route]);
+
   const bus = new THREE.Group();
   var busMesh = new THREE.Mesh(busGeometry, busMaterial);
   var busGlow = new THREE.PointLight(routeColours[route], 1.0, 120);
@@ -555,6 +539,40 @@ scene.add(
   dirLightTarget2,
   pointLight
 );
+
+// Constant Materials
+const busMaterialFancy = new THREE.MeshPhongMaterial({
+  transparent: true,
+  opacity: 0.9,
+  emissiveIntensity: 0.2,
+  specular: 0x333333,
+  shininess: 40,
+});
+const dashedCurveMaterial = (lineCol) => {
+  return new THREE.LineDashedMaterial({
+    color: lineCol,
+    linewidth: 1,
+    scale: 1,
+    dashSize: 8,
+    gapSize: 8,
+    onBeforeCompile: (shader) => {
+      shader.uniforms.time = uniforms.time;
+      shader.fragmentShader = `
+            uniform float time;
+            ${shader.fragmentShader}
+          `.replace("vLineDistance,", "vLineDistance - ( 14.0 * time ),");
+    },
+  });
+};
+const noBusCurveMaterial = (lineCol) => {
+  return new THREE.LineDashedMaterial({
+    color: lineCol,
+    linewidth: 1,
+    scale: 1,
+    dashSize: 4,
+    gapSize: 12,
+  });
+};
 
 ///Coordinate Debug Info
 // var raycaster = new THREE.Raycaster();
