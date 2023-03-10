@@ -27,5 +27,8 @@
     "three": "^0.147.0",
     "three-gltf-loader": "^1.111.0",
     "three-orbitcontrols": "^2.110.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
   }
 }
