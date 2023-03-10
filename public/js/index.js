@@ -10,7 +10,7 @@ const dim = {};
 dim.width = window.innerWidth;
 dim.height = window.innerHeight;
 
-const busIDs = ["1", "2", "3", "4", "7", "8", "9"];
+const busIDs = ["1", "2", "3", "4", "7", "8S", "9"];
 
 const routeColours = {
   1: 0x12a321,
@@ -18,7 +18,7 @@ const routeColours = {
   3: 0xed008c,
   4: 0x276bb4,
   7: 0x6d6e72,
-  8: 0x000000,
+  "8S": 0x000000,
   9: 0x009edf,
 };
 
@@ -38,7 +38,7 @@ var lastStopIDs = {
   3: [],
   4: [],
   7: [],
-  8: [],
+  "8S": [],
   9: [],
 };
 
@@ -86,7 +86,7 @@ scene.add(camera);
 // scene.add(cube);
 
 // Globally store stop positions once loaded
-var stopPositions = { 1: {}, 2: {}, 3: {}, 4: {}, 7: {}, 8: {}, 9: {} };
+var stopPositions = { 1: {}, 2: {}, 3: {}, 4: {}, 7: {}, "8S": {}, 9: {} };
 
 // Load Mesh
 var rock, rockWire, rockGroup;
@@ -302,7 +302,7 @@ function fetchBusData() {
         .then((html) => {
           var parser = new DOMParser();
           var document = parser.parseFromString(html, "text/html");
-          var stopRegex = /R\d\/c(\d{1,2}a?)\.png/;
+          var stopRegex = /R\dS?\/c(\d{1,2}a?)\.png/;
           var imageIDs = [];
           var images = Array.prototype.slice.call(
             document.getElementsByTagName("img")
