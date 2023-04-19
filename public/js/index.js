@@ -14,23 +14,23 @@ dim.height = window.innerHeight;
 const busIDs = ["1", "2", "3", "4", "7", "8S", "9"];
 
 const routeColours = {
-  1: 0x12a321,
-  2: 0xfaa11f,
-  3: 0xed008c,
-  4: 0x276bb4,
-  7: 0x6d6e72,
+  1: 0x12A321,
+  2: 0xFAA11F,
+  3: 0xED008C,
+  4: 0x276BB4,
+  7: 0x6D6E72,
   "8S": 0x000000,
-  9: 0x009edf,
+  9: 0x009EDF,
 };
 
 const busColours = {
   1: 0x129325,
-  2: 0xfa9105,
-  3: 0xed0083,
-  4: 0x1c4b7d,
-  7: 0x4a4a4b,
+  2: 0xFA9105,
+  3: 0xEE309F,
+  4: 0x1F5BA0,
+  7: 0x4A4A4B,
   "8S": 0x111111,
-  9: 0x008ebf,
+  9: 0x008EBF,
 };
 
 const uniforms = {
@@ -40,7 +40,7 @@ const uniforms = {
 const proxyURL = "/proxy/";
 
 // Settings
-var BUS_GLOW = false;
+var BUS_GLOW = true;
 
 // Globally store last fetched stops
 var lastStopIDs = {
@@ -92,7 +92,7 @@ scene.add(camera);
 // Testing Cube
 // const cube = new THREE.Mesh(
 //   new THREE.BoxGeometry(1, 1, 1),
-//   new THREE.MeshBasicMaterial({ color: 0xfff })
+//   new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
 // );
 // scene.add(cube);
 
@@ -102,7 +102,7 @@ var stopPositions = { 1: {}, 2: {}, 3: {}, 4: {}, 7: {}, "8S": {}, 9: {} };
 // Load Mesh
 var rock, rockWire, rockGroup;
 const wireMaterial = new THREE.MeshStandardMaterial({
-  color: 0xbebebe,
+  color: 0xC1C1C1,
   roughness: 0.7,
   metalness: 0.35,
   flatShading: false,
@@ -143,12 +143,12 @@ meshLoader.load(
 // Renderer
 let canvas = document.getElementsByClassName("webgl")[0];
 
-const possibly_mobile = dim.height / dim.width > 1.0
+const POSSIBLY_MOBILE = dim.height / dim.width > 1.0
 
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
   // Disable antialiasing if device is portrait
-  antialias: !possibly_mobile,
+  antialias: !POSSIBLY_MOBILE,
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(dim.width, dim.height);
@@ -311,16 +311,16 @@ function fetchBusData() {
   // Wait for all fetches to complete before continuing
   Promise.all(fetches).then(() => {
     // Check if dict is same as previous dict, if so then we're done:
+    var busData = stopIDToCoords(busStopIDs);
+    drawLinks(stopPositions, busData);
     if (JSON.stringify(busStopIDs) == JSON.stringify(lastStopIDs)) {
       return;
     } else {
       lastStopIDs = busStopIDs;
-      var busData = stopIDToCoords(busStopIDs);
-      drawLinks(stopPositions, busData);
       getBuses(busData);
+      // TODO: Test more, this was fixing the 'empty' when no buses.
     }
   });
-
   setTimeout(fetchBusData, 10000);
 }
 
@@ -458,7 +458,7 @@ function createBus(route) {
   var busGeometry = new ConvexGeometry(busPoints);
 
   var busMaterial = new MeshPhongMaterial({})
-  if (!possibly_mobile) {
+  if (!POSSIBLY_MOBILE) {
     busMaterial = busMaterialFancy.clone();
     busMaterial.emissive = new THREE.Color(routeColours[route]);
   }
@@ -468,13 +468,19 @@ function createBus(route) {
   var busMesh = new THREE.Mesh(busGeometry, busMaterial);
   var busGlow = new THREE.PointLight(routeColours[route], 1.0, 120);
   
-  // Depending on setting, this will disable/enable bus lights
-  // busGlow.visible = BUS_GLOW;
-  if (!BUS_GLOW) busGlow.intensity = 0.0;
-
   busGlow.name = "busglow";
   busGlow.position.set(0, 0, 0);
-  bus.add(busMesh, busGlow);
+
+  // Depending on setting, this will disable/enable bus lights by toggling visibility
+  // On "mobile" devices, wait until scene redraw before choosing to add lights back or not (can still toggle if present on last refresh)
+  if (BUS_GLOW) {
+    bus.add(busGlow);
+  } else {
+    busGlow.intensity = 0.0;
+    if (!POSSIBLY_MOBILE) bus.add(busGlow);
+  }
+
+  bus.add(busMesh);
   return bus;
 }
 
@@ -512,12 +518,12 @@ function routePath() {
 }
 
 // Lighting
-var ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
-var dirLight = new THREE.DirectionalLight(0x9999ff, 0.5);
-var dirLight2 = new THREE.DirectionalLight(0xff9999, 0.5);
+var ambientLight = new THREE.AmbientLight(0xFFFFFF, 1.1);
+var dirLight = new THREE.DirectionalLight(0x9999FF, 0.5);
+var dirLight2 = new THREE.DirectionalLight(0xFF9999, 0.5);
 var dirLightTarget = new THREE.Object3D();
 var dirLightTarget2 = new THREE.Object3D();
-var pointLight = new THREE.PointLight(0xffffff, 0.3, 0, 0.3);
+var pointLight = new THREE.PointLight(0xFFFFFF, 0.3, 0, 0.3);
 
 dirLight.position.set(250, 120, 1640);
 dirLight.castShadow = true;
@@ -606,7 +612,7 @@ var clock = new THREE.Clock();
 fetchBusData();
 
 // GUI
-function create_toggle_button(id, text, parent, fn) {
+function create_toggle_button(id, text, parent, fn, initial) {
   const btn = document.createElement("button");
   btn.id = id;
   btn.innerHTML = text;
@@ -614,6 +620,7 @@ function create_toggle_button(id, text, parent, fn) {
     fn();
     btn.classList.toggle("btn-on");
   });
+  if (initial) btn.classList.add("btn-on");
   document.getElementById(parent).appendChild(btn);
 }
 
@@ -628,7 +635,7 @@ function toggle_busglow() {
   })
 }
 
-create_toggle_button("toggle_lights", "Toggle Bus Lights", "settings", toggle_busglow)
+create_toggle_button("toggle_lights", "Toggle Bus Lights", "settings", toggle_busglow, true)
 
 // Main Loop
 const loop = () => {
