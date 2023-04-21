@@ -70,7 +70,7 @@ const scene = new THREE.Scene();
 
 // Create the camera
 const camera = new THREE.PerspectiveCamera(
-  75,
+  70,
   dim.width / dim.height,
   1,
   10000
@@ -131,6 +131,10 @@ meshLoader.load(
     stopPositions = projectStops();
 
     // routePath();
+
+    // Initialise raycasting on click
+    mousecaster = new THREE.Raycaster();
+    renderer.domElement.addEventListener('click', mousecast, false);
   },
   (xhr) => {
     console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`); // Progress indicator
@@ -172,14 +176,15 @@ function projectStops() {
 
   for (const route of busIDs) {
     var routeStops = new THREE.Group();
-    var stopsPos = [];
+    var stopsEntries = [];
     var routeStopsRaw = stopsRaw[route];
     var routeColour = routeColours[route];
 
     stops.updateMatrixWorld();
-    for (var l in routeStopsRaw) {
-      if (l === undefined || l.length == 0) continue;
-      let stopPos = lltp(routeStopsRaw[l][0], routeStopsRaw[l][1]);
+    for (var shelter in routeStopsRaw) {
+      if (shelter === undefined || shelter == {}) continue;
+      let stopPos = lltp(routeStopsRaw[shelter].coords[0], routeStopsRaw[shelter].coords[1]);
+      let stopName = routeStopsRaw[shelter].name;
 
       // Find where the terrain height is at this stop, 'drop' it in place.
       let intersect, intersectOther;
@@ -191,24 +196,29 @@ function projectStops() {
         // Check for existing markers at this position, if so place on top of them.
         let intersectPoint = intersectOther[0].point;
         intersectPoint.y += 2;
-        stopsPos.push(intersectPoint);
+        stopsEntries.push({pos: intersectPoint, name: stopName});
       } else if (typeof intersect !== "undefined" && intersect.length > 0) {
         // If not, place on ground.
         let intersectPoint = intersect[0].point;
         intersectPoint.y += 3;
-        stopsPos.push(intersectPoint);
+        stopsEntries.push({pos: intersectPoint, name: stopName});
       } else continue;
     }
-    for (var p = 0; p < stopsPos.length; p++) {
+    for (var p = 0; p < stopsEntries.length; p++) {
       var stopSphere = new THREE.Mesh(
         new THREE.SphereGeometry(8, 8, 6),
         new THREE.MeshBasicMaterial({ color: routeColour })
       );
-      stopSphere.position.copy(stopsPos[p]);
+      stopSphere.position.copy(stopsEntries[p].pos);
       stopSphere.name = "stop_" + route + "_" + p;
+      stopSphere.userData = {
+        name: stopsEntries[p].name,
+        id: p,
+      }
       routeStops.add(stopSphere);
     }
-    (allStops[route] = stopsPos), (routeStops.name = "r" + route + "_stops");
+    allStops[route] = stopsEntries;
+    routeStops.name = "r" + route + "_stops";
     stops.add(routeStops);
   }
   stops.name = "stops";
@@ -222,7 +232,9 @@ function drawLinks(stopsPos, busData) {
   var allCurves = new THREE.Group();
 
   for (const route of busIDs) {
-    var routeStops = stopsPos[route];
+    var routeStops = stopsPos[route].map(
+      shelter => shelter.pos
+    );
     var routeBusData = busData[route];
     var routeColour = routeColours[route];
     var routeCurves = new THREE.Group();
@@ -342,24 +354,23 @@ function stopIDToCoords(busStopIDs) {
       }
 
       const routeStopsData = Object.values(stopData)[0].routes[route];
+      var stopCoords = routeStopsData[stopID - 1];
 
       if (between) {
         // Get two pairs of coordinates, find midpoint
         let a, b;
-        a = routeStopsData[stopID - 1];
+        a = stopCoords.coords;
         if (stopID == routeStopsData.length) {
           // stopID is 1-indexed, if bus passed last stop, 'next' stop would be the first stop
-          b = routeStopsData[0];
+          b = routeStopsData[0].coords;
         } else {
-          b = routeStopsData[stopID];
+          b = routeStopsData[stopID].coords;
         }
-        // Arithmetic mean is approximately correct for negligible curvature
-        var stopCoords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      } else {
-        var stopCoords = routeStopsData[stopID - 1];
+        // Arithmetic mean is approximately correct for negligible curvature, overwrite coords
+        stopCoords.coords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       }
       routeStopCoords.push(stopCoords);
-      routeLinkData.push([stopID, between]); // True if bus is between stops
+      routeLinkData.push([stopID, between, stopCoords.name]);
     }
     busData[route] = {
       coords: routeStopCoords,
@@ -369,18 +380,23 @@ function stopIDToCoords(busStopIDs) {
   return busData;
 }
 
+// Make buses globally accessible
+var allBuses = new THREE.Group();
+
 function getBuses(busData) {
   // Get buses from dict if any changes.
 
   // Clear last 'frame'
-  scene.remove(scene.getObjectByName("lastBuses"));
+  scene.remove(allBuses);
 
-  var allBuses = new THREE.Group();
+  allBuses = new THREE.Group();
 
   for (var route of busIDs) {
     var buses = new THREE.Group();
     var busesPos = [];
-    var routeBusCoords = busData[route].coords;
+    var routeBusCoords = busData[route].coords.map(
+      shelter => shelter.coords
+    );
     var routeBusData = busData[route].data;
 
     for (var b = 0; b < routeBusCoords.length; b++) {
@@ -414,10 +430,9 @@ function getBuses(busData) {
       // Get direction from here to the next stop
 
       // Collect stop index of each bus on route, from something like [index, true|false]
-      const stopIndex = routeBusData.map((_) => {
-        return _[0];
-      });
-      const routeStopPositions = stopPositions[route];
+      const stopIndex = routeBusData.map(_ => _[0]);
+      const routeStopPositions = stopPositions[route].map(_ => _.pos);
+      const routeStopNames = stopPositions[route].map(_ => _.name);
       var dir = 0;
       if (stopIndex[p] == routeStopPositions.length) {
         // If on last stop on route
@@ -431,7 +446,12 @@ function getBuses(busData) {
       }
       // Set rotation about y-axis, account for original dir not aligning with 'pointing' dir
       aBus.rotation.y = Math.PI - dir;
-      aBus.name = "bus";
+      console.log(routeStopNames)
+      aBus.name = "bus"
+      aBus.userData = {
+        name: routeStopNames[p],
+        id: p,
+      }
       buses.add(aBus);
     }
     buses.name = "r" + route + "_buses";
@@ -610,6 +630,30 @@ var clock = new THREE.Clock();
 
 // Start fetching bus data from server
 fetchBusData();
+
+// Object selection via raycasting
+var mousecaster;
+var _mouse = {x: 0, y: 0};
+
+function mousecast(event) {
+  
+  var rect = renderer.domElement.getBoundingClientRect();
+  _mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  _mouse.y = - ((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  mousecaster.setFromCamera(_mouse, camera);
+
+  var intersectStops = mousecaster.intersectObjects(stops.children);
+  var intersectBuses = mousecaster.intersectObjects(allBuses.children);
+  if (typeof intersectStops !== "undefined" && intersectStops.length > 0) {
+    var selectedStop = intersectStops[0];
+    console.log(selectedStop.object.userData);
+  }
+  if (typeof intersectBuses !== "undefined" && intersectBuses.length > 0) {
+    var selectedBus = intersectBuses[0];
+    console.log(selectedBus.object.parent.userData); // Recursive option finds the mesh part, which is child of the overall bus (with userData)
+  }
+}
 
 // GUI
 function create_toggle_button(id, text, parent, fn, initial) {
