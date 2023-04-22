@@ -134,7 +134,7 @@ meshLoader.load(
 
     // Initialise raycasting on click
     mousecaster = new THREE.Raycaster();
-    renderer.domElement.addEventListener('click', mousecast, false);
+    renderer.domElement.addEventListener("click", mousecast, false);
   },
   (xhr) => {
     console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`); // Progress indicator
@@ -193,7 +193,7 @@ function projectStops() {
       intersect = downRay.intersectObjects(rockGroup.children, true);
 
       if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
-        // Check for existing markers at this position, if so place on top of them.
+        // Check for existing markers (of previous routes) at this position, if so place on top of them.
         let intersectPoint = intersectOther[0].point;
         intersectPoint.y += 2;
         stopsEntries.push({pos: intersectPoint, name: stopName});
@@ -204,17 +204,27 @@ function projectStops() {
         stopsEntries.push({pos: intersectPoint, name: stopName});
       } else continue;
     }
+    let alreadyAdded = [];
     for (var p = 0; p < stopsEntries.length; p++) {
+      let position = stopsEntries[p].pos;
+
+      // Check if the sphere has already been added (on this route), then skip creating it.
+      // Had to compare a unique property as object comparison is messy
+      if (alreadyAdded.some(obj => obj.x == position.x)) {
+        continue;
+      }
+      
       var stopSphere = new THREE.Mesh(
         new THREE.SphereGeometry(8, 8, 6),
         new THREE.MeshBasicMaterial({ color: routeColour })
       );
-      stopSphere.position.copy(stopsEntries[p].pos);
+      stopSphere.position.copy(position);
       stopSphere.name = "stop_" + route + "_" + p;
       stopSphere.userData = {
         name: stopsEntries[p].name,
         id: p,
       }
+      alreadyAdded.push(position);
       routeStops.add(stopSphere);
     }
     allStops[route] = stopsEntries;
@@ -345,32 +355,40 @@ function stopIDToCoords(busStopIDs) {
     var routeLinkData = [];
 
     for (var j = 0; j < routeStopIDs.length; j++) {
-      var stopID = routeStopIDs[j];
-      var between = false;
+      let stopID = routeStopIDs[j];
+      let between = false;
 
       if (stopID.endsWith("a")) {
         between = true;
         stopID = stopID.slice(0, -1);
       }
 
-      const routeStopsData = Object.values(stopData)[0].routes[route];
-      var stopCoords = routeStopsData[stopID - 1];
-
+      let routeStopsData = Object.values(stopData)[0].routes[route];
+      let stopCoords = routeStopsData[stopID - 1].coords;
+      let stopName = routeStopsData[stopID - 1].name;
+      let stopNameNext;
       if (between) {
         // Get two pairs of coordinates, find midpoint
         let a, b;
-        a = stopCoords.coords;
+        a = routeStopsData[stopID - 1].coords;
         if (stopID == routeStopsData.length) {
           // stopID is 1-indexed, if bus passed last stop, 'next' stop would be the first stop
           b = routeStopsData[0].coords;
+          stopNameNext = routeStopsData[0].name;
         } else {
           b = routeStopsData[stopID].coords;
+          stopNameNext = routeStopsData[stopID].name;
         }
         // Arithmetic mean is approximately correct for negligible curvature, overwrite coords
-        stopCoords.coords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        stopCoords = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       }
       routeStopCoords.push(stopCoords);
-      routeLinkData.push([stopID, between, stopCoords.name]);
+      routeLinkData.push({
+        id: stopID,
+        between: between,
+        name: stopName,
+        nameNext: stopNameNext,
+      });
     }
     busData[route] = {
       coords: routeStopCoords,
@@ -394,9 +412,7 @@ function getBuses(busData) {
   for (var route of busIDs) {
     var buses = new THREE.Group();
     var busesPos = [];
-    var routeBusCoords = busData[route].coords.map(
-      shelter => shelter.coords
-    );
+    var routeBusCoords = busData[route].coords;
     var routeBusData = busData[route].data;
 
     for (var b = 0; b < routeBusCoords.length; b++) {
@@ -428,30 +444,23 @@ function getBuses(busData) {
       aBus.position.copy(busesPos[p]);
 
       // Get direction from here to the next stop
-
-      // Collect stop index of each bus on route, from something like [index, true|false]
-      const stopIndex = routeBusData.map(_ => _[0]);
       const routeStopPositions = stopPositions[route].map(_ => _.pos);
-      const routeStopNames = stopPositions[route].map(_ => _.name);
       var dir = 0;
-      if (stopIndex[p] == routeStopPositions.length) {
+      if (routeBusData[p].id == routeStopPositions.length) {
         // If on last stop on route
-        let p0 = routeStopPositions[parseInt(stopIndex[p]) - 1];
+        let p0 = routeStopPositions[parseInt(routeBusData[p].id) - 1];
         let p1 = routeStopPositions[0];
         dir = Math.atan2(p1.z - p0.z, p1.x - p0.x);
       } else {
-        let p0 = routeStopPositions[parseInt(stopIndex[p]) - 1];
-        let p1 = routeStopPositions[parseInt(stopIndex[p])];
+        let p0 = routeStopPositions[parseInt(routeBusData[p].id) - 1];
+        let p1 = routeStopPositions[parseInt(routeBusData[p].id)];
         dir = Math.atan2(p1.z - p0.z, p1.x - p0.x);
       }
       // Set rotation about y-axis, account for original dir not aligning with 'pointing' dir
       aBus.rotation.y = Math.PI - dir;
-      console.log(routeStopNames)
       aBus.name = "bus"
-      aBus.userData = {
-        name: routeStopNames[p],
-        id: p,
-      }
+      // Store id, name, nameNext and between in object
+      aBus.userData = routeBusData[p];
       buses.add(aBus);
     }
     buses.name = "r" + route + "_buses";
@@ -634,6 +643,14 @@ fetchBusData();
 // Object selection via raycasting
 var mousecaster;
 var _mouse = {x: 0, y: 0};
+var selectedPos;
+var selectedObject;
+
+// function updateMouseCoords(event, coords) {
+//   var rect = renderer.domElement.getBoundingClientRect();
+//   coords.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   coords.y = - ((event.clientY - rect.top) / rect.height) * 2 + 1;
+// }
 
 function mousecast(event) {
   
@@ -645,13 +662,51 @@ function mousecast(event) {
 
   var intersectStops = mousecaster.intersectObjects(stops.children);
   var intersectBuses = mousecaster.intersectObjects(allBuses.children);
+
+  // TODO: sort out selection priority
+  if (typeof selectedObject !== "undefined") {
+    selectedObject.material.color.setHex(selectedObject.material.userData.oldColor); // Revert colour change
+  }
   if (typeof intersectStops !== "undefined" && intersectStops.length > 0) {
     var selectedStop = intersectStops[0];
-    console.log(selectedStop.object.userData);
-  }
-  if (typeof intersectBuses !== "undefined" && intersectBuses.length > 0) {
+    selectedPos = intersectStops[0].point;
+    selectedObject = selectedStop.object;
+    displayStopInfo(selectedObject.userData);
+
+    // Lighten colour upon selection
+    selectedObject.material.userData.oldColor = selectedObject.material.color.getHex();
+    selectedObject.material.color.set(RGB_Log_Blend(0.3, selectedObject.material.color.getStyle(), "rgb(245,255,235)"));
+    
+  } else if (typeof intersectBuses !== "undefined" && intersectBuses.length > 0) {
     var selectedBus = intersectBuses[0];
-    console.log(selectedBus.object.parent.userData); // Recursive option finds the mesh part, which is child of the overall bus (with userData)
+    selectedObject = selectedBus.object;
+    
+    // Lighten colour upon selection
+    selectedObject.material.userData.oldColor = selectedObject.material.color.getHex();
+    selectedObject.material.color.set(RGB_Log_Blend(0.15, selectedObject.material.color.getStyle(), "rgb(245,255,235)"));
+
+    // Recursive option finds the mesh part, which is child of the overall bus (with userData in it)
+    displayStopInfo(selectedObject.parent.userData);
+
+  } else {
+    selectedObject = undefined;
+    // Clear info?
+  }
+}
+
+function displayStopInfo(userData) {
+  var headerElement = document.getElementById("stopName");
+  var pElement = document.getElementById("stopInfo");
+  if (headerElement) {
+    if (userData.between) {
+      headerElement.textContent = userData.name + " → " + userData.nameNext;
+    } else {
+      headerElement.textContent = userData.name;
+    }
+  }
+  if (pElement) {
+    pElement.textContent = "Stop #" + (userData.id + 1) + " on route";
+    // Remove?
   }
 }
 

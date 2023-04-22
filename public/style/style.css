@@ -1,30 +1,32 @@
+@font-face {
+  font-family: "Quicksand";
+  src: url("/fonts/Quicksand-Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 html {
   width: 100%;
   height: 100%;
-
-  background: #00c3ff; /* Backwards compatible */
+  
+  background: #00C3FF; /* Backwards compatible */
   background: -webkit-linear-gradient(
     top,
-    #00c3ff,
-    #005fec
-  ); /* For Older Chrome, Safari */
-  background: -moz-linear-gradient(
-    top,
-    #00c3ff,
-    #005fec
+    #00C3FF,
+    #005FEC
+    ); /* For Older Chrome, Safari */
+    background: -moz-linear-gradient(
+      top,
+      #00C3FF,
+      #005FEC
   ); /* For Older Firefox */
   background: linear-gradient(
     top,
-    #00c3ff,
-    #005fec
+    #00C3FF,
+    #005FEC
   ); /* IE10+, FF16+, Chrome26+, Opera12+, Safari17+ */
 }
-
-body {
-  margin: 0;
-  padding: 0;
-}
-
+  
 canvas {
   z-index: 0;
   display: block;
@@ -33,6 +35,36 @@ canvas {
   left: 0;
 }
 
+body {
+  margin: 0;
+  padding: 0;
+}
+
+h2 {
+  margin: 10px 0px 10px 0px;
+  padding: 1vh 1vw 0 calc(min(2vw, 12px)); /* Not above 12px */
+  font-family: "Quicksand";
+  font-size: calc(min(max(2vw, 18px), 22px)); /* Between 18 and 22px*/
+  color: #ffffff;
+}
+
+p#stopInfo {
+  margin: 10px 0px 10px 0px;
+  padding: 0 1vw 0 calc(min(2vw, 12px)); /* Not above 12px */
+  font-family: "Quicksand";
+  font-size: calc(min(max(2vw, 12px), 18px)); /* Between 12 and 18px*/
+  color: #ffffff;
+  text-decoration: none;
+}
+
+a:visited, a:link {
+  color: #ffffff
+}
+
+a:hover, a:active {
+  color: #bb99bb
+}
+  
 #gui {
   position: absolute;
   visibility: hidden;
@@ -66,23 +98,65 @@ canvas {
   padding: 4px;
   border: none;
   border-radius: 0px;
-  margin: 4px calc(min(10px, 5vw)) 4px 0px;
+  margin: 4px calc(min(10px, 5vw)) 4px 0px; /* right Not above 10px*/
   display: block;
   right: 0;
+  font-family: "Quicksand";
 }
 
 button:not(.btn-on) {
-  background: #e3e3e3;
+  background: #E3E3E3;
 }
 
 button:not(.btn-on):hover{
-  background: #bebebe;
+  background: #BEBEBE;
 }
 
 button.btn-on {
-  background: #eeff00;
+  background: #EEFF00;
 }
 
 button.btn-on:hover {
-  background: #ccdd00;
+  background: #CCDD00;
+}
+
+#infobox {
+  z-index: 1;
+  position: absolute;
+  visibility: visible;
+  background: #404550;
+  top: 0px;
+  left: 0px;
+  width: calc(min(max(30vw, 320px), 500px)); /* Between 320 and 500px*/
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: "Quicksand";
+}
+
+@media(max-aspect-ratio: 1) {
+  #infobox {
+    bottom: 0px;
+    width: 100%;
+    height: calc(max(30vh, 200px)); /* Not below 200px*/
+    margin-top: auto;
+  }
+  h2 {
+    margin: 10px 0px 10px 0px;
+    padding: 1vh 1vh 0 calc(min(2vh, 10px)); /* left Not above 10px */
+    font-family: "Quicksand";
+    font-size: calc(min(max(2vh, 18px), 22px)); /* Between 18 and 22px*/
+    color: #ffffff;
+  }
+  p#stopInfo {
+    margin: 10px 0px 10px 0px;
+    padding: 0 1vh 0 calc(min(2vh, 10px)); /* left Not above 10px */
+    font-family: "Quicksand";
+    font-size: calc(min(max(2vh, 12px), 18px)); /* Between 12 and 18px*/
+    color: #ffffff;
+    text-decoration: none;
+  }
 }
