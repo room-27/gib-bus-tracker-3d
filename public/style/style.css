@@ -137,7 +137,7 @@ button.btn-on:hover {
   font-family: "Quicksand";
 }
 
-@media(max-aspect-ratio: 1) {
+@media(max-aspect-ratio: 7 / 5) {
   #infobox {
     bottom: 0px;
     width: 100%;
