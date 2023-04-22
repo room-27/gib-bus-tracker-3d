@@ -7,9 +7,10 @@ import * as stopData from "../data/stops.json" assert { type: "json" };
 import * as routePathData from "../data/routePathData.json" assert { type: "json" };
 import { MeshPhongMaterial } from "three";
 
-const dim = {};
-dim.width = window.innerWidth;
-dim.height = window.innerHeight;
+const dim = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+};
 
 const busIDs = ["1", "2", "3", "4", "7", "8S", "9"];
 
@@ -145,7 +146,7 @@ meshLoader.load(
 );
 
 // Renderer
-let canvas = document.getElementsByClassName("webgl")[0];
+const canvas = document.getElementsByClassName("webgl")[0];
 
 const POSSIBLY_MOBILE = dim.height / dim.width > 1.0
 
@@ -160,14 +161,13 @@ renderer.setClearColor(0x000000, 0.0);
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
-
-const cameraTarget = cameraStart.add(cameraDirection.multiplyScalar(100)); // Add direction vector to start to obtain a point in this direction to target
 controls.addEventListener("change", () => renderer.render(scene, camera));
 
+const cameraTarget = cameraStart.add(cameraDirection.multiplyScalar(100)); // Add direction vector to start to obtain a point in this direction to target
 camera.updateProjectionMatrix();
 
 // Bus Stop LLTP
-var stopsRaw = Object.values(stopData)[0].routes;
+const stopsRaw = Object.values(stopData)[0].routes;
 var stops = new THREE.Group();
 var downRay = new THREE.Raycaster();
 
@@ -183,11 +183,11 @@ function projectStops() {
     stops.updateMatrixWorld();
     for (var shelter in routeStopsRaw) {
       if (shelter === undefined || shelter == {}) continue;
-      let stopPos = lltp(routeStopsRaw[shelter].coords[0], routeStopsRaw[shelter].coords[1]);
-      let stopName = routeStopsRaw[shelter].name;
+      var stopPos = lltp(routeStopsRaw[shelter].coords[0], routeStopsRaw[shelter].coords[1]);
+      var stopName = routeStopsRaw[shelter].name;
 
       // Find where the terrain height is at this stop, 'drop' it in place.
-      let intersect, intersectOther;
+      var intersect, intersectOther;
       downRay.set(stopPos, new THREE.Vector3(0, -1, 0));
       intersectOther = downRay.intersectObjects(stops.children, true);
       intersect = downRay.intersectObjects(rockGroup.children, true);
@@ -204,9 +204,9 @@ function projectStops() {
         stopsEntries.push({pos: intersectPoint, name: stopName});
       } else continue;
     }
-    let alreadyAdded = [];
+    var alreadyAdded = [];
     for (var p = 0; p < stopsEntries.length; p++) {
-      let position = stopsEntries[p].pos;
+      var position = stopsEntries[p].pos;
 
       // Check if the sphere has already been added (on this route), then skip creating it.
       // Had to compare a unique property as object comparison is messy
@@ -298,9 +298,8 @@ function fetchBusData() {
   var baseUrl = proxyURL + "https://track.bus.gi/busTracker.php?id=";
   var busStopIDs = {};
   var fetches = [];
-  for (var i of busIDs) {
-    const ii = i; // Seems to 'forget' which index we are on if not stored
-    var url = baseUrl + ii;
+  for (let i of busIDs) {
+    var url = baseUrl + i;
     fetches.push(
       fetch(url, { "Content-Type": "text/plain" })
         .then((response) => {
@@ -315,7 +314,7 @@ function fetchBusData() {
             document.getElementsByTagName("img")
           );
           images.forEach((image) => {
-            let src = image.src;
+            var src = image.src;
             if (src.includes("background")) {
               return; // Skip background image for each route
             } else {
@@ -325,7 +324,7 @@ function fetchBusData() {
               }
             }
           });
-          busStopIDs[ii] = imageIDs;
+          busStopIDs[i] = imageIDs;
         })
     );
   }
@@ -355,18 +354,18 @@ function stopIDToCoords(busStopIDs) {
     var routeLinkData = [];
 
     for (var j = 0; j < routeStopIDs.length; j++) {
-      let stopID = routeStopIDs[j];
-      let between = false;
+      var stopID = routeStopIDs[j];
+      var between = false;
 
       if (stopID.endsWith("a")) {
         between = true;
         stopID = stopID.slice(0, -1);
       }
 
-      let routeStopsData = Object.values(stopData)[0].routes[route];
-      let stopCoords = routeStopsData[stopID - 1].coords;
-      let stopName = routeStopsData[stopID - 1].name;
-      let stopNameNext;
+      var routeStopsData = Object.values(stopData)[0].routes[route];
+      var stopCoords = routeStopsData[stopID - 1].coords;
+      var stopName = routeStopsData[stopID - 1].name;
+      var stopNameNext;
       if (between) {
         // Get two pairs of coordinates, find midpoint
         let a, b;
@@ -418,14 +417,14 @@ function getBuses(busData) {
     for (var b = 0; b < routeBusCoords.length; b++) {
       if (routeBusCoords[b] === undefined || routeBusCoords[b].length == 0)
         continue;
-      let busPos = lltp(routeBusCoords[b][0], routeBusCoords[b][1]);
+      var busPos = lltp(routeBusCoords[b][0], routeBusCoords[b][1]);
 
       // Need to know if other objects in the way
       allBuses.updateMatrixWorld();
       downRay.set(busPos, new THREE.Vector3(0, -1, 0));
 
-      let intersectOther = downRay.intersectObjects(allBuses.children, true);
-      let intersect = downRay.intersectObjects(scene.children, true);
+      var intersectOther = downRay.intersectObjects(allBuses.children, true);
+      var intersect = downRay.intersectObjects(scene.children, true);
 
       if (typeof intersectOther !== "undefined" && intersectOther.length > 0) {
         // Check for existing buses at this position MAYBE
@@ -528,7 +527,7 @@ function routePath() {
     // for each pair of coordinates, create a line
     for (const pairGroup of routePathGeoData) {
       for (const pair of pairGroup) {
-        let point = lltp(pair[1], pair[0]);
+        var point = lltp(pair[1], pair[0]);
         points.push(point);
       }
     }
@@ -547,7 +546,7 @@ function routePath() {
 }
 
 // Lighting
-var ambientLight = new THREE.AmbientLight(0xFFFFFF, 1.1);
+const ambientLight = new THREE.AmbientLight(0xFFFFFF, 1.1);
 var dirLight = new THREE.DirectionalLight(0x9999FF, 0.5);
 var dirLight2 = new THREE.DirectionalLight(0xFF9999, 0.5);
 var dirLightTarget = new THREE.Object3D();
@@ -630,12 +629,12 @@ const noBusCurveMaterial = (lineCol) => {
 //   false
 // );
 
-var localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
-var axesHelper = new THREE.AxesHelper(0.2);
+const localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
+const axesHelper = new THREE.AxesHelper(0.2);
 // scene.add(axesHelper);
 
 // Clock for some animation
-var clock = new THREE.Clock();
+const clock = new THREE.Clock();
 
 // Start fetching bus data from server
 fetchBusData();
