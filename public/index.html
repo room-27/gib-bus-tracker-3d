@@ -30,9 +30,33 @@
     <canvas class="webgl"></canvas>
     <script src="./js/index.js" type="module"></script>
     <div id="gui">
-      <div id="infobox">
-        <h2 id="stopName">Click on a bus stop...</h2>
-        <p id="stopInfo">for more information</p>
+      <div id="sidebar">
+        <div class="content">
+          <h2 id="stopName">Click on a bus or stop...</h2>
+          <p id="stopInfo">for more information</p>
+        </div>
+        <div class="navBar">
+          <a href="#" class="navToggle">
+            <img
+              src="./images/boxicons/bx-chevron-right.svg"
+              class="navTab"
+              width="50" height="50" alt="Toggle Sidebar">
+          </a>
+          <nav class="navTabs">
+            <a href="#" class="navLink">
+              <img
+                src="./images/boxicons/bxs-map-alt.svg"
+                class="navTab"
+                width="50" height="50" alt="Live Map">
+            </a>
+            <a href="#" class="navLink">
+              <img
+                src="./images/boxicons/bx-table.svg"
+                class="navTab"
+                width="50" height="50" alt="Route Timings">
+            </a>
+          </nav>
+        </div>
       </div>
       <div id="settings">
         

@@ -629,7 +629,7 @@ const noBusCurveMaterial = (lineCol) => {
 //   false
 // );
 
-const localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
+var localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
 const axesHelper = new THREE.AxesHelper(0.2);
 // scene.add(axesHelper);
 
@@ -704,7 +704,7 @@ function displayStopInfo(userData) {
     }
   }
   if (pElement) {
-    pElement.textContent = "Stop #" + (userData.id + 1) + " on route";
+    pElement.textContent = "Stop / Bus ID #" + (userData.id + 1) + "";
     // Remove?
   }
 }
@@ -734,6 +734,19 @@ function toggle_busglow() {
 }
 
 create_toggle_button("toggle_lights", "Toggle Bus Lights", "settings", toggle_busglow, true)
+
+// Navbar
+
+function initSidebarToggle() {
+  var toggle = document.getElementsByClassName("navToggle")[0]
+  var sidebar = document.getElementById("sidebar")
+  toggle.addEventListener("click", () => {
+    sidebar.classList.toggle("openMenu")
+    toggle.children[0].classList.toggle("rotateArrow")
+  })
+}
+
+initSidebarToggle();
 
 // Main Loop
 const loop = () => {
