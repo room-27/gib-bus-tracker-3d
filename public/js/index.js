@@ -42,6 +42,7 @@ const proxyURL = "/proxy/";
 
 // Settings
 var BUS_GLOW = true;
+var MAP_SHOWN = false;
 
 // Globally store last fetched stops
 var lastStopIDs = {
@@ -746,7 +747,37 @@ function initSidebarToggle() {
   })
 }
 
+// Navigation Tabs
+
+function initNavTabs() {
+  var tabs = document.getElementsByClassName("navLink");
+  for (let tab of tabs) {
+    tab.addEventListener("click", (event) => {
+      if (tab.classList.contains("activeNavLink")) return;
+      console.log(event)
+      highlightCurrentTab(tab);
+      if (event.target.id == "navTabTimings") {
+        MAP_SHOWN = true;
+        document.getElementById("timings").classList.add("openTimings");
+        // TODO: control map visibility
+      } else {
+        MAP_SHOWN = false;
+        document.getElementById("timings").classList.remove("openTimings");
+      }
+    })
+  }
+}
+
+function highlightCurrentTab(currentTab) {
+  var tabs = document.getElementsByClassName("navLink");
+  for (var tab of tabs) {
+    tab.classList.remove("activeNavLink");
+  }
+  currentTab.classList.add("activeNavLink");
+}
+
 initSidebarToggle();
+initNavTabs();
 
 // Main Loop
 const loop = () => {
