@@ -155,7 +155,6 @@ button.btn-on:hover {
   position: absolute;
   display: grid;
   row-gap: 20px;
-  width: 50px;
   top: 0;
   left: 0;
   padding: 20px;
@@ -194,7 +193,13 @@ button.btn-on:hover {
   padding: 0;
 }
 
-#tableIndexButtons {
+#tableSelector {
+  display: flex;
+  /* flex-direction: row; */
+  margin: 0 0 20px 0;
+  gap: 10px;
+}
+#tableSelector > div {
   background: #404550;
   position: relative;
   display: flex;
@@ -204,9 +209,8 @@ button.btn-on:hover {
   border-radius: 5px;
   gap: 5px;
   padding: 5px;
-  margin: 0 0 20px 0;
 }
-#tableIndexButtons a {
+#tableSelector div a {
   background: #6B7280;
   color: #FFFFFF;
   width: 40px;
@@ -222,15 +226,16 @@ button.btn-on:hover {
   user-select: none; -webkit-user-select: none;
   text-decoration: none;
 }
-#tableIndexButtons div {
+#tableSelector div div {
+  display: flex;
   color: #FFFFFF;
   font-family: "Quicksand";
-  font-size: 20px;
+  font-size: calc(min(max(3vw, 13px), 18px)); /* Between 12 and 18px*/
   margin: 0px;
   padding: 0 5px 0 5px;
-  line-height: 50px;
-  text-align: center;
-  vertical-align: center;
+  line-height: 25px;
+  align-items: center;
+  justify-content: center;
 }
 
 @media(min-aspect-ratio: 7 / 5) { /* More landscape devices */
@@ -293,6 +298,7 @@ button.btn-on:hover {
     padding: 2px 3px;
   }
   table.alternateRows tbody td {
+    width: calc(100% / 6);
     font-size: calc(min(max(3vw, 14px), 20px)); /* Between 14 and 20px*/
   }
   table.alternateRows thead th {
@@ -353,10 +359,10 @@ button.btn-on:hover {
     align-items: center;
     row-gap: 0;
     column-gap: 20px;
-    width: max-content;
     height: 50px;
     left: 0;
     bottom: 0;
+    padding: 20px 50% 20px 20px;
     margin-top: auto;
   }
   .navTabs {

@@ -130,9 +130,9 @@
       "20": {"coords": [36.1241479, -5.3536826], "name": "South Gates"},
       "21": {"coords": [36.1224568, -5.3524715], "name": "Rosia Plaza"},
 
-      "22": {"coords": [36.1228714, -5.3522647], "name": "Rosia"},
+      "22": {"coords": [36.1228714, -5.3522647], "name": "Rosia (Terminus)"},
 
-      "23": {"coords": [36.1241661, -5.3516400], "name": "South Pavilion Steps (Terminus)"},
+      "23": {"coords": [36.1241661, -5.3516400], "name": "South Pavilion Steps"},
       "24": {"coords": [36.1250652, -5.3515515], "name": "St Joseph's School"},
       "25": {"coords": [36.1241378, -5.3535173], "name": "New Mole House"},
       "26": {"coords": [36.1260152, -5.3523576], "name": "Cumberland"},
@@ -151,7 +151,7 @@
       "39": {"coords": [36.1391786, -5.3421601], "name": "William's Way"}
     },
     "7": {
-      "0": {"coords": [36.1437340, -5.3542726], "name": "Orange Bastion"},
+      "0": {"coords": [36.1437340, -5.3542726], "name": "Orange Bastion (Terminus)"},
 
       "1": {"coords": [36.1409864, -5.3547372], "name": "British War Memorial"},
       "2": {"coords": [36.1381433, -5.3547136], "name": "Cathedral Square"},
@@ -185,7 +185,7 @@
       "13": {"coords": [36.1423513, -5.3582480], "name": "Europort Building 8"},
       "14": {"coords": [36.1404224, -5.3573468], "name": "Mid-Harbour Estate"},
 
-      "15": {"coords": [36.1404980, -5.3555050], "name": "Midtown"},
+      "15": {"coords": [36.1404980, -5.3555050], "name": "Midtown (Terminus)"},
       
       "16": {"coords": [36.1412399, -5.3559472], "name": "Edinburgh House"},
       "17": {"coords": [36.1404224, -5.3573468], "name": "Mid-Harbour Estate"},
@@ -220,9 +220,9 @@
       "14": {"coords": [36.1241479, -5.3536826], "name": "South Gates"},
       "15": {"coords": [36.1224568, -5.3524715], "name": "Rosia Plaza"},
 
-      "16": {"coords": [36.1228714, -5.3522647], "name": "Rosia"},
+      "16": {"coords": [36.1228714, -5.3522647], "name": "Rosia (Terminus)"},
 
-      "17": {"coords": [36.1241661, -5.3516400], "name": "South Pavilion Steps (Terminus)"},
+      "17": {"coords": [36.1241661, -5.3516400], "name": "South Pavilion Steps"},
       "18": {"coords": [36.1250652, -5.3515515], "name": "St Joseph's School"},
       "19": {"coords": [36.1241378, -5.3535173], "name": "New Mole House"},
       "20": {"coords": [36.1260152, -5.3523576], "name": "Cumberland"},

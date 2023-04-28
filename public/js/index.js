@@ -45,6 +45,7 @@ const proxyURL = "/proxy/";
 var BUS_GLOW = true;
 var TABLE_SHOWN = false;
 var TABLE_ID = 0;
+var TABLE_VARIANT = [0, 0]; // For direction and day, initially A_to_B and weekdays
 
 // Globally store last fetched stops
 var lastStopIDs = {
@@ -775,19 +776,34 @@ function initNavTabs() {
 }
 
 function initTimings() {
-  drawTables(TABLE_ID);
+  drawTables(TABLE_ID, TABLE_VARIANT);
   var tableIndexButtons = [
     document.getElementById("tableIndexDown"),
     document.getElementById("tableIndexUp"),
-  ]  
+  ];
+  var tableVariantButton = document.getElementById("tableVariantToggle");
+  var tableDirectionButton = document.getElementById("tableDirectionToggle");
+
   tableIndexButtons[0].addEventListener("click", () => {
     // Keep in range of bus route list
     TABLE_ID = (TABLE_ID + 6) % 7;
-    drawTables(TABLE_ID);
+    drawTables(TABLE_ID, TABLE_VARIANT);
   })
   tableIndexButtons[1].addEventListener("click", () => {
     TABLE_ID = (TABLE_ID + 1) % 7;
-    drawTables(TABLE_ID);
+    drawTables(TABLE_ID, TABLE_VARIANT);
+  })
+  tableVariantButton.addEventListener("click", () => {
+    let desc = document.getElementById("dayTypeDescriptor");
+    TABLE_VARIANT[1] = 1 - TABLE_VARIANT[1]; // Toggle variant
+    desc.innerText = (TABLE_VARIANT[1] == 0) ? "Monday to Friday" : "Weekends and Public Holidays"
+    
+    drawTables(TABLE_ID, TABLE_VARIANT);
+  })
+  tableDirectionButton.addEventListener("click", () => {
+    TABLE_VARIANT[0] = 1 - TABLE_VARIANT[0]; // Toggle direction
+    
+    drawTables(TABLE_ID, TABLE_VARIANT);
   })
 }
 
@@ -799,7 +815,7 @@ function highlightCurrentTab(currentTab) {
   currentTab.classList.add("activeNavLink");
 }
 
-function drawTables(id) {
+function drawTables(id, variant) {
   const tableElement = document.getElementById("timingsTable");
   var tableData = timingsData.default.routes[busIDs[id]];
   var headerColour = new THREE.Color().set(routeColours[busIDs[id]]).getStyle();
@@ -808,7 +824,6 @@ function drawTables(id) {
     RGB_Log_Blend(0.6, headerColour, "rgb(255,255,255)"), // Lighter
     headerColour,
   ];
-  var title;
   
   // For now, only the A_to_B weekday table
   var tHeaderRow = tableElement.tHead.children[0];
@@ -816,21 +831,34 @@ function drawTables(id) {
   var tHead = tHeaderRow.children[0]
   
   var tBody = document.createElement("tbody");
-  var weekdayContents;
+  var tableDataDirectional;
+  var tContents;
   
   if (typeof tableData == "undefined") {
+    // May be useful when out of date, just remove from file
     title = "Missing Data..."
     tHead.innerText = title;
     tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
     return;
+  }
+
+  // Choose direction based on selection
+  if (variant[0] == 0) {
+    tableDataDirectional = tableData.A_to_B;
   } else {
-    title = tableData.A_to_B.title;
-    tHead.innerText = title;
-    tHead.colSpan = 6;
-    weekdayContents = tableData.A_to_B.variants.weekday.rows;
+    tableDataDirectional = tableData.B_to_A;
+  }
+  var title = tableDataDirectional.title;
+  tHead.innerText = title;
+  tHead.colSpan = 6;
+
+  if (variant[1] == 0) {
+    tContents = tableDataDirectional.variants.weekday.rows;
+  } else {
+    tContents = tableDataDirectional.variants.weekend.rows;
   }
   
-  weekdayContents.forEach((row, i) => {
+  tContents.forEach((row, i) => {
     var tRow = tBody.insertRow();
     tRow.style.background = colours[i % 2]; // Even rows (1-indexed) darker
     if (row.length == 1) {
