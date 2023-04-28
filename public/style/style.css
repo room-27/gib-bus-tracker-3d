@@ -47,7 +47,7 @@ h2 {
   font-size: calc(min(max(2vw, 18px), 22px)); /* Between 18 and 22px*/
   color: #FFFFFF;
 }
-#sidebar.openMenu h2 {
+#sidebar.openMenu:not(.inAnotherTab) h2 {
   translate: 0;
   transition: translate 0.6s ease;
 }
@@ -60,7 +60,7 @@ p#stopInfo {
   text-decoration: none;
   color: #FFFFFF;
 }
-#sidebar.openMenu p#stopInfo {
+#sidebar.openMenu:not(.inAnotherTab) p#stopInfo {
   translate: 0;
   transition: translate 0.6s ease;
 }
@@ -93,7 +93,7 @@ a.navLink, a.navToggle {
   top: 0px;
   right: 0px;
   width: 20vw;
-  height: 100%;
+  height: max-content;
   margin: 10px;
   display: inline-flex;
   flex-direction: column;
@@ -133,12 +133,12 @@ button.btn-on:hover {
 }
 
 .content {
-  position: absolute;
+  position: static;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+  flex: 100%;
   left: 80px;
-  padding: 0 10px 0 10px;
 }
 
 .navToggle {
@@ -183,16 +183,54 @@ button.btn-on:hover {
 }
 
 #timings {
+  z-index: 2;
   display: none;
 }
 #timings.openTimings {
-  z-index: 1;
+  position: relative;
   background: #F0F0DD;
   visibility: visible;
   display: block;
-  width: 100%;
-  height: 100%;
-  padding: 10px;
+  padding: 0;
+}
+
+#tableIndexButtons {
+  background: #404550;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  top: 10px;
+  width: max-content;
+  border-radius: 5px;
+  gap: 5px;
+  padding: 5px;
+  margin: 0 0 20px 0;
+}
+#tableIndexButtons a {
+  background: #6B7280;
+  color: #FFFFFF;
+  width: 40px;
+  height: 40px;
+  padding: 5px;
+  border-radius: 5px;
+  font-family: "Quicksand";
+  font-weight: bold;
+  font-size: 32px;
+  line-height: 40px;
+  text-align: center;
+  vertical-align: center;
+  user-select: none; -webkit-user-select: none;
+  text-decoration: none;
+}
+#tableIndexButtons div {
+  color: #FFFFFF;
+  font-family: "Quicksand";
+  font-size: 20px;
+  margin: 0px;
+  padding: 0 5px 0 5px;
+  line-height: 50px;
+  text-align: center;
+  vertical-align: center;
 }
 
 @media(min-aspect-ratio: 7 / 5) { /* More landscape devices */
@@ -205,7 +243,7 @@ button.btn-on:hover {
     transition: translate 0.6s ease;
   }
   #sidebar {
-    z-index: 1;
+    z-index: 3;
     position: absolute;
     visibility: visible;
     background: #404550;
@@ -220,9 +258,12 @@ button.btn-on:hover {
     flex-direction: row-reverse;
     font-family: "Quicksand";
   }
-  #sidebar.openMenu {
+  #sidebar.openMenu:not(.inAnotherTab) {
     width: calc(min(max(30vw, 320px), 500px)); /* Between 320 and 500px*/
     transition: width 0.6s ease;
+  }
+  .content {
+    padding: 0 10px 0 90px;
   }
   .navToggle .navTab{
     transform: rotate(0deg);
@@ -233,9 +274,13 @@ button.btn-on:hover {
     transition: transform 0.6s ease;
   }
   #timings.openTimings {
-    margin-left: 90px;
+    padding-left: 100px;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
   }
   table.alternateRows {
+    width: 50%;
     text-align: center;
     font-family: "Quicksand";
     border: 2px 0 2px 2px solid #FFFFFF;
@@ -248,19 +293,10 @@ button.btn-on:hover {
     padding: 2px 3px;
   }
   table.alternateRows tbody td {
-    font-size: calc(min(max(2vw, 12px), 18px)); /* Between 12 and 18px*/
-  }
-  table.alternateRows tbody tr {
-    background: #FFEAF6;
-  }
-  table.alternateRows tr:nth-child(even) {
-    background: #F8C6E3;
-  }
-  table.alternateRows thead {
-    background: #ED008C;
+    font-size: calc(min(max(3vw, 14px), 20px)); /* Between 14 and 20px*/
   }
   table.alternateRows thead th {
-    font-size: calc(min(max(3vw, 16px), 24px)); /* Between 16 and 24px*/
+    font-size: calc(min(max(4vw, 18px), 28px)); /* Between 18 and 28px*/
     font-weight: bold;
     padding: 0 20px 0 20px;
     color: #FFFFFF;
@@ -269,7 +305,7 @@ button.btn-on:hover {
 
 @media(max-aspect-ratio: 7 / 5) { /* More portrait devices */
   #sidebar {
-    z-index: 1;
+    z-index: 3;
     position: absolute;
     visibility: visible;
     background: #404550;
@@ -283,7 +319,7 @@ button.btn-on:hover {
     flex-direction: row-reverse;
     font-family: "Quicksand";
   }
-  #sidebar.openMenu {
+  #sidebar.openMenu:not(.inAnotherTab) {
     height: calc(max(30vh, 200px)); /* Not below 200px*/
     transition: height 0.6s ease;
   }
@@ -309,8 +345,7 @@ button.btn-on:hover {
     transition: translate 0.6s ease;
   }
   .content {
-    position: absolute;
-    left: 0;
+    padding: 0 10px 0 10px;
   }
   .navBar {
     display: flex;
@@ -318,7 +353,7 @@ button.btn-on:hover {
     align-items: center;
     row-gap: 0;
     column-gap: 20px;
-    width: 100%;
+    width: max-content;
     height: 50px;
     left: 0;
     bottom: 0;
@@ -341,14 +376,20 @@ button.btn-on:hover {
     transition: transform 0.6s ease;
   }
   #timings.openTimings {
-    margin-bottom: 90px;
+    padding: 0 10px 100px 10px;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
   }
   table.alternateRows {
+    box-sizing: border-box;
+    width: 100%;
     text-align: center;
     font-family: "Quicksand";
     border: 2px 0 2px 2px solid #FFFFFF;
     border-radius: 2px;
     border-collapse: collapse;
+    padding: 10px;
   }
   table.alternateRows td {
     border: 2px solid #FFFFFF;
@@ -356,19 +397,10 @@ button.btn-on:hover {
     padding: 2px 3px;
   }
   table.alternateRows tbody td {
-    font-size: calc(min(max(2vw, 12px), 18px)); /* Between 12 and 18px*/
-  }
-  table.alternateRows tbody tr {
-    background: #FFEAF6;
-  }
-  table.alternateRows tr:nth-child(even) {
-    background: #F8C6E3;
-  }
-  table.alternateRows thead {
-    background: #ED008C;
+    font-size: calc(min(max(3vw, 16px), 24px)); /* Between 16 and 24px*/
   }
   table.alternateRows thead th {
-    font-size: calc(min(max(3vw, 16px), 24px)); /* Between 16 and 24px*/
+    font-size: calc(min(max(4vw, 18px), 28px)); /* Between 18 and 28px*/
     font-weight: bold;
     padding: 0 20px 0 20px;
     color: #FFFFFF;

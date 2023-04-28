@@ -2,10 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "OrbitControls";
 import { GLTFLoader } from "GLTFLoader";
 import { ConvexGeometry } from "ConvexGeometry";
+import { MeshPhongMaterial } from "three";
 import { lltp } from "LLTP";
 import * as stopData from "../data/stops.json" assert { type: "json" };
-import * as routePathData from "../data/routePathData.json" assert { type: "json" };
-import { MeshPhongMaterial } from "three";
+// import * as routePathData from "../data/routePathData.json" assert { type: "json" };
+import * as timingsData from "../data/timings.json" assert {type: "json"};
 
 const dim = {
   width: window.innerWidth,
@@ -42,7 +43,8 @@ const proxyURL = "/proxy/";
 
 // Settings
 var BUS_GLOW = true;
-var MAP_SHOWN = false;
+var TABLE_SHOWN = false;
+var TABLE_ID = 0;
 
 // Globally store last fetched stops
 var lastStopIDs = {
@@ -742,8 +744,10 @@ function initSidebarToggle() {
   var toggle = document.getElementsByClassName("navToggle")[0]
   var sidebar = document.getElementById("sidebar")
   toggle.addEventListener("click", () => {
-    sidebar.classList.toggle("openMenu")
-    toggle.children[0].classList.toggle("rotateArrow")
+    if (!TABLE_SHOWN) {
+      sidebar.classList.toggle("openMenu")
+      toggle.children[0].classList.toggle("rotateArrow")
+    }
   })
 }
 
@@ -754,18 +758,37 @@ function initNavTabs() {
   for (let tab of tabs) {
     tab.addEventListener("click", (event) => {
       if (tab.classList.contains("activeNavLink")) return;
-      console.log(event)
       highlightCurrentTab(tab);
       if (event.target.id == "navTabTimings") {
-        MAP_SHOWN = true;
+        TABLE_SHOWN = true;
         document.getElementById("timings").classList.add("openTimings");
-        // TODO: control map visibility
+
+        document.getElementById("sidebar").classList.add("inAnotherTab");
       } else {
-        MAP_SHOWN = false;
+        TABLE_SHOWN = false;
         document.getElementById("timings").classList.remove("openTimings");
+
+        document.getElementById("sidebar").classList.remove("inAnotherTab");
       }
     })
   }
+}
+
+function initTimings() {
+  drawTables(TABLE_ID);
+  var tableIndexButtons = [
+    document.getElementById("tableIndexDown"),
+    document.getElementById("tableIndexUp"),
+  ]  
+  tableIndexButtons[0].addEventListener("click", () => {
+    // Keep in range of bus route list
+    TABLE_ID = (TABLE_ID + 6) % 7;
+    drawTables(TABLE_ID);
+  })
+  tableIndexButtons[1].addEventListener("click", () => {
+    TABLE_ID = (TABLE_ID + 1) % 7;
+    drawTables(TABLE_ID);
+  })
 }
 
 function highlightCurrentTab(currentTab) {
@@ -776,17 +799,74 @@ function highlightCurrentTab(currentTab) {
   currentTab.classList.add("activeNavLink");
 }
 
+function drawTables(id) {
+  const tableElement = document.getElementById("timingsTable");
+  var tableData = timingsData.default.routes[busIDs[id]];
+  var headerColour = new THREE.Color().set(routeColours[busIDs[id]]).getStyle();
+  var colours = [
+    RGB_Log_Blend(0.8, headerColour, "rgb(255,255,255)"), // Lightest
+    RGB_Log_Blend(0.6, headerColour, "rgb(255,255,255)"), // Lighter
+    headerColour,
+  ];
+  var title;
+  
+  // For now, only the A_to_B weekday table
+  var tHeaderRow = tableElement.tHead.children[0];
+  tHeaderRow.style.background = headerColour;
+  var tHead = tHeaderRow.children[0]
+  
+  var tBody = document.createElement("tbody");
+  var weekdayContents;
+  
+  if (typeof tableData == "undefined") {
+    title = "Missing Data..."
+    tHead.innerText = title;
+    tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+    return;
+  } else {
+    title = tableData.A_to_B.title;
+    tHead.innerText = title;
+    tHead.colSpan = 6;
+    weekdayContents = tableData.A_to_B.variants.weekday.rows;
+  }
+  
+  weekdayContents.forEach((row, i) => {
+    var tRow = tBody.insertRow();
+    tRow.style.background = colours[i % 2]; // Even rows (1-indexed) darker
+    if (row.length == 1) {
+      // Bypass loop, set colspan to 6
+      let time = row[0];
+      let tD = tRow.insertCell(0);
+      tD.innerText = time;
+      tD.colSpan = 6;
+      return;
+    }
+    for (var i = 0; i < row.length; i++) {
+      var time = row[i]
+      var tD = tRow.insertCell(i)
+      tD.innerText = time;
+      if (row.length < 6 && i == row.length - 1) {
+        // Allocate remaining space to last (empty) cell
+        tD.colSpan = 6 - i;
+      }
+    }
+  })
+  
+  tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+}
+
 initSidebarToggle();
 initNavTabs();
+initTimings();
 
 // Main Loop
 const loop = () => {
   // Tick
   uniforms.time.value = clock.getElapsedTime();
-
+  
   var axesPlacement = camera.localToWorld(localToCameraAxesPlacement.clone());
   axesHelper.position.copy(axesPlacement);
-
+  
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 };
