@@ -663,17 +663,14 @@ function mousecast(event) {
   if (typeof selectedObject !== "undefined") {
     selectedObject.material.color.setHex(selectedObject.material.userData.oldColor); // Revert colour change
   }
-  if (typeof intersectStops !== "undefined" && intersectStops.length > 0) {
-    var selectedStop = intersectStops[0];
-    selectedPos = intersectStops[0].point;
-    selectedObject = selectedStop.object;
-    displayStopInfo(selectedObject.userData);
 
-    // Lighten colour upon selection
-    selectedObject.material.userData.oldColor = selectedObject.material.color.getHex();
-    selectedObject.material.color.set(RGB_Log_Blend(0.3, selectedObject.material.color.getStyle(), "rgb(245,255,235)"));
-    
+  if ((typeof intersectStops == "undefined" || intersectStops.length == 0)
+   && (typeof intersectBuses == "undefined" || intersectBuses.length == 0)) {
+    // Nothing we care about has been clicked
+    selectedObject = undefined;
+
   } else if (typeof intersectBuses !== "undefined" && intersectBuses.length > 0) {
+    // A bus has been clicked
     var selectedBus = intersectBuses[0];
     selectedObject = selectedBus.object;
     
@@ -685,8 +682,15 @@ function mousecast(event) {
     displayStopInfo(selectedObject.parent.userData);
 
   } else {
-    selectedObject = undefined;
-    // Clear info?
+    // A bus stop has been clicked
+    var selectedStop = intersectStops[0];
+    selectedPos = intersectStops[0].point;
+    selectedObject = selectedStop.object;
+    displayStopInfo(selectedObject.userData);
+
+    // Lighten colour upon selection
+    selectedObject.material.userData.oldColor = selectedObject.material.color.getHex();
+    selectedObject.material.color.set(RGB_Log_Blend(0.3, selectedObject.material.color.getStyle(), "rgb(245,255,235)"));
   }
 }
 
