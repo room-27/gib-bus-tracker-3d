@@ -883,6 +883,16 @@ initBusLightToggle();
 initNavTabs();
 initTimings();
 
+function compassPoint() {
+  // Compass rotation (https://jsfiddle.net/atulmourya/tcb3rz8d/2/) and a stretch for 3D effect
+  camera.getWorldDirection(compassDirection);
+  compassSpherical.setFromVector3(compassDirection);
+  // compassSpherical.phi is pi looking straight down, zero straight up, and pi/2 along horizon
+  let stretchFactor = - Math.cos(compassSpherical.phi);
+  compass.style.transform = `rotateZ(${(180 * compassSpherical.theta / Math.PI) - 180}deg)`;
+  compass.parentElement.style.transform = `scaleY(${stretchFactor})`;
+}
+
 // Main Loop
 const loop = () => {
   // Tick
@@ -892,10 +902,7 @@ const loop = () => {
   // var axesPlacement = camera.localToWorld(localToCameraAxesPlacement.clone());
   // axesHelper.position.copy(axesPlacement);
 
-  // Compass (https://jsfiddle.net/atulmourya/tcb3rz8d/2/)
-  camera.getWorldDirection(compassDirection);
-  compassSpherical.setFromVector3(compassDirection);
-  compass.style.transform = `rotate(${(180 * compassSpherical.theta / Math.PI) - 180}deg)`
+  compassPoint();
   
   // Only render if on main screen
   if (!TABLE_SHOWN) renderer.render(scene, camera);

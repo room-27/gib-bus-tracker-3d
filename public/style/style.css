@@ -98,7 +98,7 @@ a.navLink, a.navToggle {
   align-items: center;
   justify-content: center;
 }
-#compassHolder > img {
+#compassHolder > div > img {
   visibility: visible;
   width: 70%;
   height: 70%;
