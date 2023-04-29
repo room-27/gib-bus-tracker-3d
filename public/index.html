@@ -62,18 +62,14 @@
       <div id="timings">
         <div id="tableSelector">
           <div id="tableIndexButtons">
-            <a href="#" id="tableIndexDown">🡐</a>
+            <a href="#" id="tableIndexDown" class="tableButton">🡐</a>
             <div>Change Route</div>
-            <a href="#" id="tableIndexUp">🡒</a>
-          </div>
-          <div id="tableDirectionButton">
-            <a href="#" id="tableDirectionToggle">⇌</a>
+            <a href="#" id="tableIndexUp" class="tableButton">🡒</a>
           </div>
           <div id="tableVariantButton">
-            <a href="#" id="tableVariantToggle">
+            <a href="#" id="tableVariantToggle" class="tableButton">
               <img
                 src="./images/boxicons/bx-calendar.svg"
-                class=""
                 width="40" height="40" alt="Calendar Icon">
             </a>
             <div id="dayTypeDescriptor">Monday to Friday</div>
@@ -85,9 +81,18 @@
           </thead>
           <tbody></tbody>
         </table>
+        <table id="timingsTable2" class="alternateRows">
+          <thead>
+            <tr><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
       <div id="settings">
         
+        <div id="compassHolder">
+          <img id="compass" src="./images/northArrow.svg" alt="Compass">
+        </div>
       </div>
     </div>
   </body>

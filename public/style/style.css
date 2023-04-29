@@ -132,6 +132,22 @@ button.btn-on:hover {
   background: #CCDD00;
 }
 
+#compassHolder {
+  position: relative;
+  display: flex;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  align-items: center;
+  justify-content: center;
+}
+#compassHolder > img {
+  visibility: visible;
+  width: 70%;
+  height: 70%;
+}
+
 .content {
   position: static;
   display: inline-flex;
@@ -195,7 +211,6 @@ button.btn-on:hover {
 
 #tableSelector {
   display: flex;
-  /* flex-direction: row; */
   margin: 0 0 20px 0;
   gap: 10px;
 }
@@ -206,11 +221,11 @@ button.btn-on:hover {
   flex-direction: row;
   top: 10px;
   width: max-content;
-  border-radius: 5px;
+  border-radius: 10px;
   gap: 5px;
   padding: 5px;
 }
-#tableSelector div a {
+#tableSelector > div > a {
   background: #6B7280;
   color: #FFFFFF;
   width: 40px;
@@ -226,7 +241,10 @@ button.btn-on:hover {
   user-select: none; -webkit-user-select: none;
   text-decoration: none;
 }
-#tableSelector div div {
+#tableSelector > div > a:hover {
+  background: #8F96A5;
+}
+#tableSelector > div > div {
   display: flex;
   color: #FFFFFF;
   font-family: "Quicksand";
@@ -285,12 +303,11 @@ button.btn-on:hover {
     height: 100%;
   }
   table.alternateRows {
-    width: 50%;
+    width: 55%;
     text-align: center;
     font-family: "Quicksand";
-    border: 2px 0 2px 2px solid #FFFFFF;
-    border-radius: 2px;
     border-collapse: collapse;
+    margin-bottom: 10px;
   }
   table.alternateRows td {
     border: 2px solid #FFFFFF;
@@ -392,10 +409,11 @@ button.btn-on:hover {
     width: 100%;
     text-align: center;
     font-family: "Quicksand";
-    border: 2px 0 2px 2px solid #FFFFFF;
-    border-radius: 2px;
+    /* border: 2px 0 2px 2px solid #FFFFFF; */
+    /* border-radius: 2px; */
     border-collapse: collapse;
     padding: 10px;
+    margin-bottom: 10px;
   }
   table.alternateRows td {
     border: 2px solid #FFFFFF;
@@ -403,10 +421,11 @@ button.btn-on:hover {
     padding: 2px 3px;
   }
   table.alternateRows tbody td {
-    font-size: calc(min(max(3vw, 16px), 24px)); /* Between 16 and 24px*/
+    width: calc(100% / 6);
+    font-size: calc(min(max(3vw, 16px), 20px)); /* Between 16 and 20px*/
   }
   table.alternateRows thead th {
-    font-size: calc(min(max(4vw, 18px), 28px)); /* Between 18 and 28px*/
+    font-size: calc(min(max(4vw, 18px), 26px)); /* Between 18 and 26px*/
     font-weight: bold;
     padding: 0 20px 0 20px;
     color: #FFFFFF;

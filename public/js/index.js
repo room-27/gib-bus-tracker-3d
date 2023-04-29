@@ -45,7 +45,7 @@ const proxyURL = "/proxy/";
 var BUS_GLOW = true;
 var TABLE_SHOWN = false;
 var TABLE_ID = 0;
-var TABLE_VARIANT = [0, 0]; // For direction and day, initially A_to_B and weekdays
+var TABLE_VARIANT = 0; // For type of table, initially weekdays
 
 // Globally store last fetched stops
 var lastStopIDs = {
@@ -65,7 +65,7 @@ window.addEventListener("resize", () => {
   camera.aspect = dim.width / dim.height;
   camera.updateProjectionMatrix();
 
-  localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
+  localToCameraAxesPlacement = new THREE.Vector3(0.45 * camera.aspect, -0.45, -2);
 
   renderer.setSize(dim.width, dim.height);
 });
@@ -633,9 +633,14 @@ const noBusCurveMaterial = (lineCol) => {
 //   false
 // );
 
-var localToCameraAxesPlacement = new THREE.Vector3(0, 0, -2);
+var localToCameraAxesPlacement = new THREE.Vector3(0.45 * camera.aspect, -0.45, -2);
 const axesHelper = new THREE.AxesHelper(0.2);
 // scene.add(axesHelper);
+
+// Compass
+const compass = document.getElementById("compass");
+var compassDirection = new THREE.Vector3();
+var compassSpherical = new THREE.Spherical();
 
 // Clock for some animation
 const clock = new THREE.Clock();
@@ -648,12 +653,6 @@ var mousecaster;
 var _mouse = {x: 0, y: 0};
 var selectedPos;
 var selectedObject;
-
-// function updateMouseCoords(event, coords) {
-//   var rect = renderer.domElement.getBoundingClientRect();
-//   coords.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-//   coords.y = - ((event.clientY - rect.top) / rect.height) * 2 + 1;
-// }
 
 function mousecast(event) {
   
@@ -782,7 +781,6 @@ function initTimings() {
     document.getElementById("tableIndexUp"),
   ];
   var tableVariantButton = document.getElementById("tableVariantToggle");
-  var tableDirectionButton = document.getElementById("tableDirectionToggle");
 
   tableIndexButtons[0].addEventListener("click", () => {
     // Keep in range of bus route list
@@ -795,13 +793,9 @@ function initTimings() {
   })
   tableVariantButton.addEventListener("click", () => {
     let desc = document.getElementById("dayTypeDescriptor");
-    TABLE_VARIANT[1] = 1 - TABLE_VARIANT[1]; // Toggle variant
-    desc.innerText = (TABLE_VARIANT[1] == 0) ? "Monday to Friday" : "Weekends and Public Holidays"
-    
-    drawTables(TABLE_ID, TABLE_VARIANT);
-  })
-  tableDirectionButton.addEventListener("click", () => {
-    TABLE_VARIANT[0] = 1 - TABLE_VARIANT[0]; // Toggle direction
+    // Toggle variant and div text
+    TABLE_VARIANT = 1 - TABLE_VARIANT;
+    desc.innerText = (TABLE_VARIANT == 0) ? "Monday to Friday" : "Weekends and Public Holidays"
     
     drawTables(TABLE_ID, TABLE_VARIANT);
   })
@@ -816,71 +810,72 @@ function highlightCurrentTab(currentTab) {
 }
 
 function drawTables(id, variant) {
-  const tableElement = document.getElementById("timingsTable");
-  var tableData = timingsData.default.routes[busIDs[id]];
-  var headerColour = new THREE.Color().set(routeColours[busIDs[id]]).getStyle();
-  var colours = [
+  const tableElements = document.getElementsByClassName("alternateRows");
+  const tableData = timingsData.default.routes[busIDs[id]];
+  const headerColour = new THREE.Color().set(routeColours[busIDs[id]]).getStyle();
+  const colours = [
     RGB_Log_Blend(0.8, headerColour, "rgb(255,255,255)"), // Lightest
     RGB_Log_Blend(0.6, headerColour, "rgb(255,255,255)"), // Lighter
     headerColour,
   ];
   
-  // For now, only the A_to_B weekday table
-  var tHeaderRow = tableElement.tHead.children[0];
-  tHeaderRow.style.background = headerColour;
-  var tHead = tHeaderRow.children[0]
+  for (let i = 0; i < tableElements.length; i++) {
+    const tableElement = tableElements[i];
+    var tHeaderRow = tableElement.tHead.children[0];
+    tHeaderRow.style.background = headerColour;
+    var tHead = tHeaderRow.children[0]
+    
+    var tBody = document.createElement("tbody");
+    var tableDataDirectional;
+    var tContents;
+    
+    if (typeof tableData == "undefined") {
+      // May be useful when out of date, just remove from file
+      tHead.innerText = "Missing Data...";
+      tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+      continue;
+    }
   
-  var tBody = document.createElement("tbody");
-  var tableDataDirectional;
-  var tContents;
-  
-  if (typeof tableData == "undefined") {
-    // May be useful when out of date, just remove from file
-    title = "Missing Data..."
+    // Choose direction based on selection
+    if (i == 0) {
+      tableDataDirectional = tableData.A_to_B;
+    } else {
+      tableDataDirectional = tableData.B_to_A;
+    }
+    var title = tableDataDirectional.title;
     tHead.innerText = title;
-    tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
-    return;
-  }
-
-  // Choose direction based on selection
-  if (variant[0] == 0) {
-    tableDataDirectional = tableData.A_to_B;
-  } else {
-    tableDataDirectional = tableData.B_to_A;
-  }
-  var title = tableDataDirectional.title;
-  tHead.innerText = title;
-  tHead.colSpan = 6;
-
-  if (variant[1] == 0) {
-    tContents = tableDataDirectional.variants.weekday.rows;
-  } else {
-    tContents = tableDataDirectional.variants.weekend.rows;
-  }
+    tHead.colSpan = 6;
   
-  tContents.forEach((row, i) => {
-    var tRow = tBody.insertRow();
-    tRow.style.background = colours[i % 2]; // Even rows (1-indexed) darker
-    if (row.length == 1) {
-      // Bypass loop, set colspan to 6
-      let time = row[0];
-      let tD = tRow.insertCell(0);
-      tD.innerText = time;
-      tD.colSpan = 6;
-      return;
+    if (variant == 0) {
+      tContents = tableDataDirectional.variants.weekday.rows;
+    } else {
+      tContents = tableDataDirectional.variants.weekend.rows;
     }
-    for (var i = 0; i < row.length; i++) {
-      var time = row[i]
-      var tD = tRow.insertCell(i)
-      tD.innerText = time;
-      if (row.length < 6 && i == row.length - 1) {
-        // Allocate remaining space to last (empty) cell
-        tD.colSpan = 6 - i;
+    
+    tContents.forEach((row, i) => {
+      var tRow = tBody.insertRow();
+      tRow.style.background = colours[i % 2]; // Even rows (1-indexed) darker
+      if (row.length == 1) {
+        // Bypass loop, set colspan to 6
+        let time = row[0];
+        let tD = tRow.insertCell(0);
+        tD.innerText = time;
+        tD.colSpan = 6;
+        return;
       }
-    }
-  })
-  
-  tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+      for (var i = 0; i < row.length; i++) {
+        var time = row[i]
+        var tD = tRow.insertCell(i)
+        tD.innerText = time;
+        if (row.length < 6 && i == row.length - 1) {
+          // Allocate remaining space to last (empty) cell
+          tD.colSpan = 6 - i;
+        }
+      }
+    })
+    
+    tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+  }
 }
 
 initSidebarToggle();
@@ -892,10 +887,19 @@ const loop = () => {
   // Tick
   uniforms.time.value = clock.getElapsedTime();
   
-  var axesPlacement = camera.localToWorld(localToCameraAxesPlacement.clone());
-  axesHelper.position.copy(axesPlacement);
+  // AxesHelper
+  // var axesPlacement = camera.localToWorld(localToCameraAxesPlacement.clone());
+  // axesHelper.position.copy(axesPlacement);
+
+  // Compass (https://jsfiddle.net/atulmourya/tcb3rz8d/2/)
+  camera.getWorldDirection(compassDirection);
+  compassSpherical.setFromVector3(compassDirection);
+  compass.style.transform = `rotate(${(180 * compassSpherical.theta / Math.PI) - 180}deg)`
   
-  renderer.render(scene, camera);
+  // Only render if on main screen
+  if (!TABLE_SHOWN) renderer.render(scene, camera);
+
   requestAnimationFrame(loop);
 };
+
 loop();
