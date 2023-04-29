@@ -88,52 +88,8 @@ a.navLink, a.navToggle {
   height: 100%;
 }
 
-#settings {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  width: 20vw;
-  height: max-content;
-  margin: 10px;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-#settings > * {
-  visibility: visible;
-}
-
-#settings > button {
-  z-index: 1;
-  position: relative;
-  padding: 4px;
-  border: none;
-  border-radius: 0px;
-  margin: 4px calc(min(10px, 5vw)) 4px 0px; /* right Not above 10px*/
-  display: block;
-  right: 0;
-  font-family: "Quicksand";
-}
-
-button:not(.btn-on) {
-  background: #E3E3E3;
-}
-
-button:not(.btn-on):hover{
-  background: #BEBEBE;
-}
-
-button.btn-on {
-  background: #EEFF00;
-}
-
-button.btn-on:hover {
-  background: #CCDD00;
-}
-
 #compassHolder {
-  position: relative;
+  position: absolute;
   display: flex;
   top: 0;
   right: 0;
@@ -157,13 +113,17 @@ button.btn-on:hover {
   left: 80px;
 }
 
-.navToggle {
+.navToggle, .busLightToggle {
   height: 50px;
   border-radius: 5px;
 }
-.navToggle:hover {
+.navToggle:hover, .busLightToggle:hover {
   background: #535A68;
   outline: 5px solid #535A68;
+}
+.busLightToggle.busLightEnabled {
+  background: #6B7280;
+  outline: 5px solid #6B7280;
 }
 
 .navBar {
@@ -296,6 +256,11 @@ button.btn-on:hover {
     transform: rotate(180deg);
     transition: transform 0.6s ease;
   }
+  .navBarDivider {
+    width: 90%;
+    border-width: 2px;
+    border-color: #6B7280;
+  }
   #timings.openTimings {
     padding-left: 100px;
     box-sizing: border-box;
@@ -379,7 +344,7 @@ button.btn-on:hover {
     height: 50px;
     left: 0;
     bottom: 0;
-    padding: 20px 50% 20px 20px;
+    padding: 20px;
     margin-top: auto;
   }
   .navTabs {
@@ -397,6 +362,11 @@ button.btn-on:hover {
   .navToggle .navTab.rotateArrow {
     transform: rotate(90deg);
     transition: transform 0.6s ease;
+  }
+  .navBarDivider {
+    height: 90%;
+    border-width: 2px;
+    border-color: #6B7280;
   }
   #timings.openTimings {
     padding: 0 10px 100px 10px;

@@ -44,6 +44,7 @@ const proxyURL = "/proxy/";
 // Settings
 var BUS_GLOW = true;
 var TABLE_SHOWN = false;
+var SIDEBAR_SHOWN = false;
 var TABLE_ID = 0;
 var TABLE_VARIANT = 0; // For type of table, initially weekdays
 
@@ -65,7 +66,7 @@ window.addEventListener("resize", () => {
   camera.aspect = dim.width / dim.height;
   camera.updateProjectionMatrix();
 
-  localToCameraAxesPlacement = new THREE.Vector3(0.45 * camera.aspect, -0.45, -2);
+  //localToCameraAxesPlacement = new THREE.Vector3(0.45 * camera.aspect, -0.45, -2);
 
   renderer.setSize(dim.width, dim.height);
 });
@@ -93,13 +94,6 @@ camera.rotation.setFromVector3(cameraDirection, camera.rotation.order);
 camera.updateMatrix();
 camera.updateProjectionMatrix();
 scene.add(camera);
-
-// Testing Cube
-// const cube = new THREE.Mesh(
-//   new THREE.BoxGeometry(1, 1, 1),
-//   new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
-// );
-// scene.add(cube);
 
 // Globally store stop positions once loaded
 var stopPositions = { 1: {}, 2: {}, 3: {}, 4: {}, 7: {}, "8S": {}, 9: {} };
@@ -633,8 +627,8 @@ const noBusCurveMaterial = (lineCol) => {
 //   false
 // );
 
-var localToCameraAxesPlacement = new THREE.Vector3(0.45 * camera.aspect, -0.45, -2);
-const axesHelper = new THREE.AxesHelper(0.2);
+// var localToCameraAxesPlacement = new THREE.Vector3(0.45 * camera.aspect, -0.45, -2);
+// const axesHelper = new THREE.AxesHelper(0.2);
 // scene.add(axesHelper);
 
 // Compass
@@ -697,6 +691,14 @@ function mousecast(event) {
 }
 
 function displayStopInfo(userData) {
+  if (!SIDEBAR_SHOWN) {
+    let toggle = document.getElementsByClassName("navToggle")[0];
+    let sidebar = document.getElementById("sidebar");
+    sidebar.classList.toggle("openMenu")
+    toggle.children[0].classList.toggle("rotateArrow")
+    SIDEBAR_SHOWN = true;
+  }
+
   var headerElement = document.getElementById("stopName");
   var pElement = document.getElementById("stopInfo");
   if (headerElement) {
@@ -713,17 +715,6 @@ function displayStopInfo(userData) {
 }
 
 // GUI
-function create_toggle_button(id, text, parent, fn, initial) {
-  const btn = document.createElement("button");
-  btn.id = id;
-  btn.innerHTML = text;
-  btn.addEventListener("click", () => {
-    fn();
-    btn.classList.toggle("btn-on");
-  });
-  if (initial) btn.classList.add("btn-on");
-  document.getElementById(parent).appendChild(btn);
-}
 
 function toggle_busglow() {
   // Invert last value *before* updating
@@ -736,17 +727,26 @@ function toggle_busglow() {
   })
 }
 
-create_toggle_button("toggle_lights", "Toggle Bus Lights", "settings", toggle_busglow, true)
-
 // Navbar
 
 function initSidebarToggle() {
-  var toggle = document.getElementsByClassName("navToggle")[0]
-  var sidebar = document.getElementById("sidebar")
+  var toggle = document.getElementsByClassName("navToggle")[0];
+  var sidebar = document.getElementById("sidebar");
   toggle.addEventListener("click", () => {
     if (!TABLE_SHOWN) {
-      sidebar.classList.toggle("openMenu")
-      toggle.children[0].classList.toggle("rotateArrow")
+      SIDEBAR_SHOWN = !SIDEBAR_SHOWN;
+      sidebar.classList.toggle("openMenu");
+      toggle.children[0].classList.toggle("rotateArrow");
+    }
+  })
+}
+
+function initBusLightToggle() {
+  var toggle = document.getElementsByClassName("busLightToggle")[0];
+  toggle.addEventListener("click", () => {
+    if (!TABLE_SHOWN) {
+      toggle_busglow();
+      toggle.classList.toggle("busLightEnabled");
     }
   })
 }
@@ -879,6 +879,7 @@ function drawTables(id, variant) {
 }
 
 initSidebarToggle();
+initBusLightToggle();
 initNavTabs();
 initTimings();
 
