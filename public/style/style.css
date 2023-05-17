@@ -169,6 +169,11 @@ a.navLink, a.navToggle {
   padding: 0;
 }
 
+table.alternateRows > thead.noWayBack {
+  /* Route 7 only, hide  */
+  visibility: hidden;
+}
+
 #tableSelector {
   display: flex;
   margin: 0 0 20px 0;
@@ -279,11 +284,11 @@ a.navLink, a.navToggle {
     border-radius: 2px;
     padding: 2px 3px;
   }
-  table.alternateRows tbody td {
+  table.alternateRows > tbody td {
     width: calc(100% / 6);
     font-size: calc(min(max(3vw, 14px), 20px)); /* Between 14 and 20px*/
   }
-  table.alternateRows thead th {
+  table.alternateRows > thead th {
     font-size: calc(min(max(4vw, 18px), 28px)); /* Between 18 and 28px*/
     font-weight: bold;
     padding: 0 20px 0 20px;
@@ -390,11 +395,11 @@ a.navLink, a.navToggle {
     border-radius: 2px;
     padding: 2px 3px;
   }
-  table.alternateRows tbody td {
+  table.alternateRows > tbody td {
     width: calc(100% / 6);
     font-size: calc(min(max(3vw, 16px), 20px)); /* Between 16 and 20px*/
   }
-  table.alternateRows thead th {
+  table.alternateRows > thead th {
     font-size: calc(min(max(4vw, 18px), 26px)); /* Between 18 and 26px*/
     font-weight: bold;
     padding: 0 20px 0 20px;

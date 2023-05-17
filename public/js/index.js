@@ -126,10 +126,11 @@ meshLoader.load(
 
     scene.add(rockGroup);
 
+    // Project the paths on the rock mesh
+    // routePath();
+
     // Now the stops can be projected onto the terrain, since the mesh is loaded.
     stopPositions = projectStops();
-
-    // routePath();
 
     // Initialise raycasting on click
     mousecaster = new THREE.Raycaster();
@@ -337,7 +338,6 @@ function fetchBusData() {
     } else {
       lastStopIDs = busStopIDs;
       getBuses(busData);
-      // TODO: Test more, this was fixing the 'empty' when no buses.
     }
   });
   setTimeout(fetchBusData, 10000);
@@ -514,6 +514,7 @@ function routePath() {
   // (TESTING) Read data from file, join coordinates and create a detailed road path for each route.
   var routePaths = new THREE.Group();
   var routePathsRaw = Object.values(routePathData)[0].features;
+  var downRay = new THREE.Raycaster();
 
   for (var i = 0; i < routePathsRaw.length; i++) {
     var routePath = routePathsRaw[i];
@@ -524,9 +525,13 @@ function routePath() {
 
     // for each pair of coordinates, create a line
     for (const pairGroup of routePathGeoData) {
+      var point;
+      var intersect;
       for (const pair of pairGroup) {
-        var point = lltp(pair[1], pair[0]);
-        points.push(point);
+        point = lltp(pair[1], pair[0]);
+        downRay.set(point, new THREE.Vector3(0, -1, 0));
+        intersect = downRay.intersectObjects(rockGroup.children, true);
+        points.push(intersect[0].point);
       }
     }
 
@@ -659,7 +664,6 @@ function mousecast(event) {
   var intersectStops = mousecaster.intersectObjects(stops.children);
   var intersectBuses = mousecaster.intersectObjects(allBuses.children);
 
-  // TODO: sort out selection priority
   if (typeof selectedObject !== "undefined") {
     selectedObject.material.color.setHex(selectedObject.material.userData.oldColor); // Revert colour change
   }
@@ -829,23 +833,32 @@ function drawTables(id, variant) {
     tHeaderRow.style.background = headerColour;
     var tHead = tHeaderRow.children[0]
     
-    var tBody = document.createElement("tbody");
     var tableDataDirectional;
     var tContents;
     
+    var tBody = document.createElement("tbody");
+    tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+
     if (typeof tableData == "undefined") {
       // May be useful when out of date, just remove from file
       tHead.innerText = "Missing Data...";
-      tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
+      tableElements[1].tHead.classList.add("noWayBack");
       continue;
     }
-  
+    
     // Choose direction based on selection
     if (i == 0) {
       tableDataDirectional = tableData.A_to_B;
     } else {
-      tableDataDirectional = tableData.B_to_A;
+      if (typeof tableData.B_to_A !== "undefined") {
+        tableDataDirectional = tableData.B_to_A;
+        tableElement.tHead.classList.remove("noWayBack");
+      } else {
+        tableElement.tHead.classList.add("noWayBack");
+        break;
+      }
     }
+
     var title = tableDataDirectional.title;
     tHead.innerText = title;
     tHead.colSpan = 6;
