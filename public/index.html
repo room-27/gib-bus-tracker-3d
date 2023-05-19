@@ -30,6 +30,9 @@
     <canvas class="webgl"></canvas>
     <script src="./js/index.js" type="module"></script>
     <div id="gui">
+      <div id="loading">
+        <p>Loading...</p>
+      </div>
       <div id="sidebar">
         <div class="content">
           <h2 id="stopName">Click on a bus or stop...</h2>
@@ -42,17 +45,24 @@
               class="navTab"
               width="50" height="50" alt="Toggle Sidebar">
           </a>
-          <a href="#" class="busLightToggle busLightEnabled">
+          <a href="#" id="busLightToggle" class="sidebarToggle toggleEnabled">
             <img
               src="./images/boxicons/bx-bulb.svg"
               class="navTab"
               width="50" height="50" alt="Toggle Bus Lights">
+          </a>
+          <a href="#" id="modelToggle" class="sidebarToggle">
+            <img
+              src="./images/mountain.svg"
+              class="navTab"
+              width="50" height="50" alt="Toggle Model">
           </a>
           <hr noshade class="navBarDivider">
           <nav class="navTabs">
             <a href="#" class="navLink activeNavLink">
               <img
                 src="./images/boxicons/bxs-map-alt.svg"
+                id="navTabMap"
                 class="navTab"
                 width="50" height="50" alt="Live Map">
             </a>

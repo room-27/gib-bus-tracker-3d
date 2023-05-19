@@ -88,6 +88,24 @@ a.navLink, a.navToggle {
   height: 100%;
 }
 
+#loading {
+  z-index: 4;
+  position: absolute;
+  display: flex;
+  background: #EEEEEE;
+  opacity: 70%;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-family: "Quicksand";
+  font-weight: bold;
+  font-size: 32px;
+}
+#loading.shown {
+  visibility: visible;
+}
+
 #compassHolder {
   position: absolute;
   display: flex;
@@ -113,15 +131,15 @@ a.navLink, a.navToggle {
   left: 80px;
 }
 
-.navToggle, .busLightToggle {
+.navToggle, .sidebarToggle {
   height: 50px;
   border-radius: 5px;
 }
-.navToggle:hover, .busLightToggle:hover {
+.navToggle:hover, .sidebarToggle:hover {
   background: #535A68;
   outline: 5px solid #535A68;
 }
-.busLightToggle.busLightEnabled {
+.sidebarToggle.toggleEnabled {
   background: #6B7280;
   outline: 5px solid #6B7280;
 }

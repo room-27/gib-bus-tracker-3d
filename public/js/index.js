@@ -47,6 +47,7 @@ var TABLE_SHOWN = false;
 var SIDEBAR_SHOWN = false;
 var TABLE_ID = 0;
 var TABLE_VARIANT = 0; // For type of table, initially weekdays
+var CURRENT_MODEL; // Will be set later
 
 // Globally store last fetched stops
 var lastStopIDs = {
@@ -99,8 +100,8 @@ scene.add(camera);
 var stopPositions = { 1: {}, 2: {}, 3: {}, 4: {}, 7: {}, "8S": {}, 9: {} };
 
 // Load Mesh
-var rock, rockWire, rockGroup;
-const wireMaterial = new THREE.MeshStandardMaterial({
+var rock, rockGroup;
+const rockMaterial = new THREE.MeshStandardMaterial({
   color: 0xC1C1C1,
   roughness: 0.7,
   metalness: 0.35,
@@ -110,44 +111,76 @@ const wireMaterial = new THREE.MeshStandardMaterial({
   polygonOffsetUnits: 1,
 });
 const meshLoader = new GLTFLoader();
-meshLoader.load(
-  "../models/wiregib.gltf",
-  (gltf) => {
-    // Although scene has only one element usually, it may have a Light, Camera etc.,
-    // that I may not remember to remove (when updating mesh).
-    rock = gltf.scene;
-    rock.traverse((node) => {
-      if (!node.isMesh) return;
-      node.material = wireMaterial;
-    });
 
-    rockGroup = new THREE.Group();
-    rockGroup.add(rock.children[0]);
+const POSSIBLY_MOBILE = dim.height / dim.width > 1.0
 
-    scene.add(rockGroup);
+function loadModel(modelPath) {
+  // Put up loading overlay
+  let loadingScreen = document.getElementById("loading");
+  loadingScreen.classList.add("shown");
 
-    // Project the paths on the rock mesh
-    // routePath();
+  meshLoader.load(
+    modelPath,
+    (gltf) => {
+      // Clear last model
+      if (typeof rock !== "undefined" && typeof rock.parent !== "undefined") {
+        rockGroup.traverse((node) => {
+          if (node.isMesh) node.geometry.dispose();
+          rockGroup.remove(node);
+        });
 
-    // Now the stops can be projected onto the terrain, since the mesh is loaded.
-    stopPositions = projectStops();
+        scene.remove(rockGroup);
+        scene.remove(stops);
+      }
+      
+      // Although scene has only one element usually, it may have a Light, Camera etc.,
+      // that I may not remember to remove (when updating mesh).
+      rock = gltf.scene;
+      rock.traverse((node) => {
+        if (!node.isMesh) return;
+        node.material = rockMaterial;
+      });
+      
+      rockGroup = new THREE.Group();
+      rockGroup.add(rock.children[0]);
+      
+      scene.add(rockGroup);
+      
+      // Project the paths on the rock mesh
+      // routePath();
+      
+      // Now the stops can be projected onto the terrain, since the mesh is loaded.
+      stops = new THREE.Group();
+      stopPositions = projectStops();
+      drawLinks(stopPositions, undefined);
 
-    // Initialise raycasting on click
-    mousecaster = new THREE.Raycaster();
-    renderer.domElement.addEventListener("click", mousecast, false);
-  },
-  (xhr) => {
-    console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`); // Progress indicator
-  },
-  (error) => {
-    console.error(error);
-  }
-);
+      // Take down loading overlay
+      loadingScreen.classList.remove("shown");
+    },
+    (xhr) => {
+      // Progress indicator
+      // Only ever 100% as one file is loaded. Temporarily disabled due to console spam.
+      //console.log(`${((xhr.loaded / xhr.total) * 100).toFixed(2)}% loaded`);
+    },
+    (error) => {
+      console.error(error);
+      loadingScreen.classList.remove("shown");
+    }
+  );
+}
+
+// Only render smaller model on (assumed) mobile device load
+if (POSSIBLY_MOBILE) {
+  CURRENT_MODEL = "flat";
+  loadModel("../models/wiregibflat.gltf");
+} else {
+  CURRENT_MODEL = "topological";
+  loadModel("../models/wiregib.gltf");
+  document.getElementById("modelToggle").classList.add("toggleEnabled");
+}
 
 // Renderer
 const canvas = document.getElementsByClassName("webgl")[0];
-
-const POSSIBLY_MOBILE = dim.height / dim.width > 1.0
 
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
@@ -181,7 +214,7 @@ function projectStops() {
 
     stops.updateMatrixWorld();
     for (var shelter in routeStopsRaw) {
-      if (shelter === undefined || shelter == {}) continue;
+      if (typeof shelter === "undefined" || shelter == {}) continue;
       var stopPos = lltp(routeStopsRaw[shelter].coords[0], routeStopsRaw[shelter].coords[1]);
       var stopName = routeStopsRaw[shelter].name;
 
@@ -241,18 +274,21 @@ function drawLinks(stopsPos, busData) {
   var allCurves = new THREE.Group();
 
   for (const route of busIDs) {
+    var routeCurves = new THREE.Group();
     var routeStops = stopsPos[route].map(
       shelter => shelter.pos
     );
-    var routeBusData = busData[route];
     var routeColour = routeColours[route];
-    var routeCurves = new THREE.Group();
+    var routeBusData;
+    var curveMaterial = dashedCurveMaterial(routeColour);
 
-    // Change material to 'slower' dashes if no buses on route
-    var curveMaterial =
-      routeBusData.data.length == 0
-        ? noBusCurveMaterial(routeColour)
-        : dashedCurveMaterial(routeColour);
+    if (typeof busData !== "undefined") {
+      // Change material to 'slower' dashes if no buses on route
+      routeBusData = busData[route];
+      if (routeBusData.data.length == 0) {
+        curveMaterial = noBusCurveMaterial(routeColour);
+      }
+    }
 
     for (var p = 0; p < routeStops.length; p++) {
       // Create bezier curves between stops.
@@ -413,7 +449,7 @@ function getBuses(busData) {
     var routeBusData = busData[route].data;
 
     for (var b = 0; b < routeBusCoords.length; b++) {
-      if (routeBusCoords[b] === undefined || routeBusCoords[b].length == 0)
+      if (typeof routeBusCoords[b] === "undefined" || routeBusCoords[b].length == 0)
         continue;
       var busPos = lltp(routeBusCoords[b][0], routeBusCoords[b][1]);
 
@@ -648,7 +684,9 @@ const clock = new THREE.Clock();
 fetchBusData();
 
 // Object selection via raycasting
-var mousecaster;
+var mousecaster = new THREE.Raycaster();
+renderer.domElement.addEventListener("click", mousecast, false);
+
 var _mouse = {x: 0, y: 0};
 var selectedPos;
 var selectedObject;
@@ -668,8 +706,8 @@ function mousecast(event) {
     selectedObject.material.color.setHex(selectedObject.material.userData.oldColor); // Revert colour change
   }
 
-  if ((typeof intersectStops == "undefined" || intersectStops.length == 0)
-   && (typeof intersectBuses == "undefined" || intersectBuses.length == 0)) {
+  if ((typeof intersectStops === "undefined" || intersectStops.length == 0)
+   && (typeof intersectBuses === "undefined" || intersectBuses.length == 0)) {
     // Nothing we care about has been clicked
     selectedObject = undefined;
 
@@ -750,11 +788,26 @@ function initSidebarToggle() {
 }
 
 function initBusLightToggle() {
-  var toggle = document.getElementsByClassName("busLightToggle")[0];
+  var toggle = document.getElementById("busLightToggle");
   toggle.addEventListener("click", () => {
     if (!TABLE_SHOWN) {
       toggle_busglow();
-      toggle.classList.toggle("busLightEnabled");
+      toggle.classList.toggle("toggleEnabled");
+    }
+  })
+}
+
+function initModelToggle() {
+  var toggle = document.getElementById("modelToggle");
+  toggle.addEventListener("click", () => {
+    toggle.classList.toggle("toggleEnabled");
+    // Switch between topological and flat rock models
+    if (CURRENT_MODEL == "topological") {
+      loadModel("../models/wiregibflat.gltf");
+      CURRENT_MODEL = "flat";
+    } else {
+      loadModel("../models/wiregib.gltf");
+      CURRENT_MODEL = "topological";
     }
   })
 }
@@ -767,17 +820,16 @@ function initNavTabs() {
     tab.addEventListener("click", (event) => {
       if (tab.classList.contains("activeNavLink")) return;
       highlightCurrentTab(tab);
+
       if (event.target.id == "navTabTimings") {
         TABLE_SHOWN = true;
         document.getElementById("timings").classList.add("openTimings");
-
         document.getElementById("sidebar").classList.add("inAnotherTab");
-      } else {
-        TABLE_SHOWN = false;
-        document.getElementById("timings").classList.remove("openTimings");
-
-        document.getElementById("sidebar").classList.remove("inAnotherTab");
+        return
       }
+      TABLE_SHOWN = false;
+      document.getElementById("timings").classList.remove("openTimings");
+      document.getElementById("sidebar").classList.remove("inAnotherTab");
     })
   }
 }
@@ -839,7 +891,7 @@ function drawTables(id, variant) {
     var tBody = document.createElement("tbody");
     tableElement.replaceChild(tBody, tableElement.getElementsByTagName("tbody")[0]);
 
-    if (typeof tableData == "undefined") {
+    if (typeof tableData === "undefined") {
       // May be useful when out of date, just remove from file
       tHead.innerText = "Missing Data...";
       tableElements[1].tHead.classList.add("noWayBack");
@@ -897,6 +949,7 @@ function drawTables(id, variant) {
 
 initSidebarToggle();
 initBusLightToggle();
+initModelToggle();
 initNavTabs();
 initTimings();
 
